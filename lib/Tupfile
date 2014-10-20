@@ -1,0 +1,7 @@
+include_rules
+
+SRCS = noshell.cc
+CXXFLAGS += -I$(PROJECT_ROOT)/include
+
+: foreach $(SRCS) |> !cxx |> {lib_objs}
+: {lib_objs}      |> !ar  |> libnoshell.a

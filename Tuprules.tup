@@ -1,0 +1,27 @@
+!cc    = |> ^ CC    %f^ $(CC) $(T_CPPFLAGS) $(CPPFLAGS) $(T_CFLAGS) $(CFLAGS_%B) $(CFLAGS) -c -o %o %f |> %B.o
+!cxx   = |> ^ CXX   %f^ $(CXX) $(T_CPPFLAGS) $(CPPFLAGS) $(T_CXXFLAGS) $(CXXFLAGS_%B) $(CXXFLAGS) -c -o %o %f |> %B.o
+!ld    = |> ^ LD    %o^ $(CC) $(T_LDFLAGS) $(LDFLAGS) $(LDFLAGS_%B) $(LOADLIBES) $(LDLIBS) %f -o %o |>
+!lxxd  = |> ^ LXX   %o^ $(CXX) $(T_LDFLAGS) $(LDFLAGS) $(LDFLAGS_%B) $(LOADLIBES) %f $(LDLIBS) -o %o |>
+!cld   = |> ^ CLD   %o^ $(CC) $(T_CPPFLAGS) $(CPPFLAGS) $(T_CFLAGS) $(CFLAGS_%B) $(CFLAGS) $(LDFLAGS) %f -o %o |>
+!cxxld = |> ^ CXXLD %o^ $(CXX) $(T_CPPFLAGS) $(CPPFLAGS) $(T_CXXFLAGS) $(CXXFLAGS_%B) $(CXXFLAGS) $(T_LDFLAGS) $(LDFLAGS) $(LDFLAGS_%B) $(LOADLIBES) %f $(LDLIBS) -o %o |> %B
+!ar    = |> ^ AR    %o^ $(AR) sruv $(T_ARFLAGS) $(ARFLAGS) %o %f |>
+!yaggo = |> ^ YAGGO %f^ $(YAGGO) %f |> %B.hpp
+
+# : foreach *.c |> !cc |>
+# : foreach *.cc |> !cxx |>
+# : foreach *.cpp |> !cxx |>
+
+CC    = gcc
+ifdef CXX
+  CXX   = @(CXX)
+else
+  CXX   = g++
+endif
+AR    = ar
+YAGGO = yaggo
+
+PROJECT_ROOT = $(TUP_CWD)
+T_CXXFLAGS = -std=c++0x
+T_LDFLAGS = -pthread
+
+.gitignore
