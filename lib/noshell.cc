@@ -32,17 +32,35 @@ void send_errno_to_pipe(int fd) {
   }
 }
 
-void setup_exec_child(const std::vector<std::string>& cmd) {
+bool setup_exec_child(std::forward_list<std::unique_ptr<process_setup> >& setups, const std::vector<std::string>& cmd) {
+  for(auto& it : setups) {
+    if(!it->child_setup())
+      return false;
+  }
+
   std::vector<const char*> argv(cmd.size() + 1);
   for(size_t i = 0; i < cmd.size(); ++i)
     argv[i] = cmd[i].data();
   argv[cmd.size()] = nullptr;
   execvp(argv[0], (char**)argv.data());
+  return false;
 }
+
+struct auto_close {
+  int fd;
+  auto_close(int i) : fd(i) { }
+  ~auto_close() { close(fd); }
+};
 
 Handle Command::run() {
   Handle ret;
 
+  // Create the setups
+  // TODO: error catching
+  for(auto& it : setters)
+    ret.setups.push_front(std::unique_ptr<process_setup>(it->make_setup()));
+
+  // Create communication pipe and fork, setup and exec child
   int pipe_fds[2];
   if(pipe2(pipe_fds, O_CLOEXEC) == -1)
     return ret.return_errno();
@@ -52,14 +70,22 @@ Handle Command::run() {
 
   case 0:
     close(pipe_fds[0]);
-    setup_exec_child(cmd);
+    setup_exec_child(ret.setups, cmd);
     send_errno_to_pipe(pipe_fds[1]);
     exit(0);
 
   default: break;
   }
 
+  // Parent setup and wait for child exec
   close(pipe_fds[1]);
+  auto_close close_pipe0(pipe_fds[0]);
+
+  for(auto& it : ret.setups) {
+    if(!it->parent_setup(nullptr))
+      return ret.return_errno();
+  }
+
   int recv_errno;
   while(true) {
     ssize_t bytes = read(pipe_fds[0], &recv_errno, sizeof(recv_errno));
@@ -80,6 +106,10 @@ Handle Command::run_wait() {
   if(!res.setup_error())
     res.wait();
   return res;
+}
+
+void Command::push_setter(process_setter* setter) {
+  setters.push_front(std::unique_ptr<process_setter>(setter));
 }
 
 void Handle::wait() {

@@ -1,6 +1,6 @@
 include_rules
 
-SRCS = noshell.cc
+SRCS = noshell.cc setters.cc
 CXXFLAGS += -I$(PROJECT_ROOT)/include
 
 : foreach $(SRCS) |> !cxx |> {lib_objs}
