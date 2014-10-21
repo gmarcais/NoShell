@@ -161,7 +161,7 @@ Exit PipeLine::run_wait() {
 }
 
 // Redirection operators
-PipeLine& operator>(PipeLine& pl, from_to ft) {
+PipeLine& operator>(PipeLine& pl, const from_to& ft) {
   if(!pl.commands.empty())
     pl.commands.back().push_setter(new fd_redirection_setter(ft.from, ft.to));
   return pl;
@@ -180,6 +180,11 @@ PipeLine& operator>(PipeLine& pl, const char* path) {
 
 PipeLine& operator>>(PipeLine& pl, const char* path) {
   pl.commands.back().push_setter(new path_redirection_setter(1, path, path_redirection_setter::APPEND));
+  return pl;
+}
+
+PipeLine& operator<(PipeLine& pl, const from_to& ft) {
+  pl.commands.back().push_setter(new fd_redirection_setter(ft.from, ft.to));
   return pl;
 }
 

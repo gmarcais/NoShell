@@ -45,9 +45,10 @@ public:
   void push_command(Command&& c) { commands.push_back(std::move(c)); }
 
   friend PipeLine& operator|(PipeLine& p1, PipeLine&& p2);
-  friend PipeLine& operator>(PipeLine& pl, from_to ft);
+  friend PipeLine& operator>(PipeLine& pl, const from_to& ft);
   friend PipeLine& operator>(PipeLine& pl, const char* path);
   friend PipeLine& operator>>(PipeLine& pl, const char* path);
+  friend PipeLine& operator<(PipeLine& pl, const from_to& ft);
   friend PipeLine& operator<(PipeLine& pl, const char* path);
 };
 
@@ -65,8 +66,8 @@ PipeLine C(Args... args) {
   return create_pipe(cmds, args...);
 }
 
-PipeLine& operator>(PipeLine& cmd, from_to ft);
-inline PipeLine&& operator>(PipeLine&& cmd, from_to ft) { cmd > ft; return std::move(cmd); }
+PipeLine& operator>(PipeLine& cmd, const from_to& ft);
+inline PipeLine&& operator>(PipeLine&& cmd, const from_to& ft) { cmd > ft; return std::move(cmd); }
 inline PipeLine& operator>(PipeLine& cmd, int fd) { return cmd > from_to(1, fd); }
 inline PipeLine&& operator>(PipeLine&& cmd, int fd) { return std::move(cmd > fd); }
 
@@ -80,8 +81,8 @@ inline PipeLine&& operator>>(PipeLine&& pl, const char* path) { return std::move
 inline PipeLine& operator>>(PipeLine& pl, const std::string& path) { return pl >> path.c_str(); }
 inline PipeLine&& operator>>(PipeLine&& pl, const std::string& path) { return std::move(pl >> path.c_str()); }
 
-PipeLine& operator<(PipeLine& cmd, from_to ft);
-inline PipeLine&& operator<(PipeLine&& cmd, from_to ft) { cmd < ft; return std::move(cmd); }
+PipeLine& operator<(PipeLine& cmd, const from_to& ft);
+inline PipeLine&& operator<(PipeLine&& cmd, const from_to& ft) { cmd < ft; return std::move(cmd); }
 inline PipeLine& operator<(PipeLine& cmd, int fd) { return cmd < from_to(0, fd); }
 inline PipeLine&& operator<(PipeLine&& cmd, int fd) { return std::move(cmd < fd); }
 
