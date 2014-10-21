@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <iterator>
+#include <ext/stdio_filebuf.h>
 
 #include <noshell/setters.hpp>
 
@@ -71,4 +72,30 @@ process_setup* path_redirection_setter::make_setup() {
 bool path_redirection::parent_setup() { safe_close(to); return true; }
 path_redirection::~path_redirection() { safe_close(to); }
 
+process_setup* fd_pipe_redirection_setter::make_setup() {
+  int fds[2];
+  if(pipe(fds) == -1) return nullptr;
+  const int nb = (type != READ);
+  to           = fds[nb];
+  return new fd_pipe_redirection(from, fds[1 - nb], fds[nb]);
+}
+
+bool fd_pipe_redirection::child_setup() {
+  safe_close(pipe_close);
+  return safe_dup2(pipe_dup, from);
+}
+
+bool fd_pipe_redirection::parent_setup() { safe_close(pipe_dup); return true; }
+fd_pipe_redirection::~fd_pipe_redirection() { safe_close(pipe_dup); }
+
+process_setup* stdio_pipe_redirection_setter::make_setup() {
+  process_setup* setup = fd_pipe_redirection_setter::make_setup();
+  if(!setup) return nullptr;
+  file = fdopen(fd, fd_pipe_redirection_setter::type == READ ? "r" : "w");
+  if(!file) {
+    delete setup;
+    return nullptr;
+  }
+  return setup;
+}
 } // namespace noshell
