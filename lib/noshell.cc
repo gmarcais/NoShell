@@ -59,8 +59,11 @@ Handle Command::run(process_setup* last_setup) {
   // TODO: error catching
   if(last_setup)
     ret.setups.push_front(std::unique_ptr<process_setup>(last_setup));
-  for(auto& it : setters)
-    ret.setups.push_front(std::unique_ptr<process_setup>(it->make_setup()));
+  for(auto& it : setters) {
+    process_setup* new_setup = it->make_setup();
+    if(!new_setup) return ret.return_errno();
+    ret.setups.push_front(std::unique_ptr<process_setup>(new_setup));
+  }
 
   // Create communication pipe and fork, setup and exec child
   int pipe_fds[2];
@@ -158,14 +161,25 @@ Exit PipeLine::run_wait() {
 }
 
 // Redirection operators
-Command& operator>(Command& cmd, from_to ft) {
-  cmd.push_setter(new fd_redirection_setter(ft.from, ft.to));
-  return cmd;
+PipeLine& operator>(PipeLine& pl, from_to ft) {
+  if(!pl.commands.empty())
+    pl.commands.back().push_setter(new fd_redirection_setter(ft.from, ft.to));
+  return pl;
 }
 
 PipeLine& operator|(PipeLine& p1, PipeLine&& p2) {
   for(auto& it : p2.commands)
     p1.push_command(std::move(it));
   return p1;
+}
+
+PipeLine& operator>(PipeLine& pl, const char* path) {
+  pl.commands.back().push_setter(new path_redirection_setter(1, path, path_redirection_setter::WRITE));
+  return pl;
+}
+
+PipeLine& operator>>(PipeLine& pl, const char* path) {
+  pl.commands.back().push_setter(new path_redirection_setter(1, path, path_redirection_setter::APPEND));
+  return pl;
 }
 } // namespace noshell

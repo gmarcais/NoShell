@@ -48,4 +48,27 @@ bool pipeline_redirection::parent_setup() {
   safe_close(pipe1[1]);
   return true;
 }
+
+process_setup* path_redirection_setter::make_setup() {
+  if(type == READ) {
+    int flags = O_RDONLY;
+    int to = open(path.c_str(), flags);
+    if(to == -1) return nullptr;
+    return new path_redirection(from, to);
+  } else {
+    int flags = O_WRONLY|O_CREAT;
+    if(type == APPEND)
+      flags |= O_APPEND;
+    else
+      flags |= O_TRUNC;
+    mode_t mode =  S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH;
+    int to = open(path.c_str(), flags, mode);
+    if(to == -1) return nullptr;
+    return new path_redirection(from, to);
+  }
+}
+
+bool path_redirection::parent_setup() { safe_close(to); return true; }
+path_redirection::~path_redirection() { safe_close(to); }
+
 } // namespace noshell

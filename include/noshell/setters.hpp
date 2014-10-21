@@ -31,7 +31,23 @@ struct fd_redirection : public process_setup {
 struct fd_redirection_setter : public process_setter {
   const int from, to;
   fd_redirection_setter(int f, int t) : from(f), to(t) { }
-  process_setup* make_setup() { return new fd_redirection(from, to); }
+  virtual process_setup* make_setup() { return new fd_redirection(from, to); }
+};
+
+struct path_redirection : public fd_redirection {
+  path_redirection(int f, int t) : fd_redirection(f, t) { }
+  virtual ~path_redirection();
+  virtual bool parent_setup();
+};
+
+struct path_redirection_setter : public process_setter {
+  enum path_type { READ, WRITE, APPEND };
+  const int         from;
+  const std::string path;
+  const path_type   type;
+  path_redirection_setter(int f, const char* p, path_type t = READ) : from(f), path(p), type(t) { }
+  path_redirection_setter(int f, const std::string& p, path_type t = READ) : from(f), path(p), type(t) { }
+  virtual process_setup* make_setup();
 };
 
 struct pipeline_redirection : public process_setup {
