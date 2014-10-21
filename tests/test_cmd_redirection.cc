@@ -64,4 +64,20 @@ TEST(CmdRedirection, AppendTmpFile) {
   EXPECT_FALSE(std::getline(tmp, line));
 }
 
+TEST(CmdRedirection, InputFile) {
+  NS::Exit e = NS::C("cat") > getenv("TEST_TMP") < "text_file.txt";
+
+  EXPECT_TRUE(e.success());
+  std::ifstream tmp(getenv("TEST_TMP"));
+  std::string line;
+  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_EQ("hello", line);
+  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_EQ("the", line);
+  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_EQ("", line);
+  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_EQ("world!", line);
+  EXPECT_FALSE(std::getline(tmp, line));
+}
 } // empty namespace

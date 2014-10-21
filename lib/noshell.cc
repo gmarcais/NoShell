@@ -182,4 +182,9 @@ PipeLine& operator>>(PipeLine& pl, const char* path) {
   pl.commands.back().push_setter(new path_redirection_setter(1, path, path_redirection_setter::APPEND));
   return pl;
 }
+
+PipeLine& operator<(PipeLine& pl, const char* path) {
+  pl.commands.back().push_setter(new path_redirection_setter(0, path, path_redirection_setter::READ));
+  return pl;
+}
 } // namespace noshell
