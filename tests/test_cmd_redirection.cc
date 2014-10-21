@@ -7,11 +7,11 @@
 #include <noshell/noshell.hpp>
 
 namespace {
-TEST(CmdRedirection, OutputFile) {
+namespace NS = noshell;
+TEST(CmdRedirection, OutputFD) {
   int fd = open(getenv("TEST_TMP"), O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
   ASSERT_NE(-1, fd);
-  auto cmd = noshell::Command({"echo", "coucou"}) > fd;
-  auto handle = cmd.run_wait();
+  NS::Handle handle = NS::Command({"./puts_to", "1", "coucou"}) > fd;
   close(fd);
 
   EXPECT_TRUE(handle.success());

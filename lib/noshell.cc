@@ -18,7 +18,7 @@ inline const char* strerror_r(int err, char* buf, size_t buflen) {
   return strerror__(buf, ::strerror_r(err, buf, buflen));
 }
 
-std::string Errno::what() {
+std::string Errno::what() const {
   char buf[256];
   return std::string(strerror_r(value, buf, sizeof(buf)));
 }
@@ -52,11 +52,13 @@ struct auto_close {
   ~auto_close() { close(fd); }
 };
 
-Handle Command::run() {
+Handle Command::run(process_setup* last_setup) {
   Handle ret;
 
   // Create the setups
   // TODO: error catching
+  if(last_setup)
+    ret.setups.push_front(std::unique_ptr<process_setup>(last_setup));
   for(auto& it : setters)
     ret.setups.push_front(std::unique_ptr<process_setup>(it->make_setup()));
 
@@ -82,7 +84,7 @@ Handle Command::run() {
   auto_close close_pipe0(pipe_fds[0]);
 
   for(auto& it : ret.setups) {
-    if(!it->parent_setup(nullptr))
+    if(!it->parent_setup())
       return ret.return_errno();
   }
 
@@ -112,6 +114,8 @@ void Command::push_setter(process_setter* setter) {
   setters.push_front(std::unique_ptr<process_setter>(setter));
 }
 
+Handle::Handle(Command&& rhs) : Handle(rhs.run_wait()) { }
+
 void Handle::wait() {
   if(error != NO_ERROR) return;
   pid_t res;
@@ -124,5 +128,44 @@ void Handle::wait() {
     set_errno();
   else
     set_status(status);
+}
+
+Exit::Exit(PipeLine&& rhs) : Exit(rhs.run_wait()) { }
+
+Exit PipeLine::run() {
+  Exit ret;
+
+  auto it = commands.begin();
+  if(it == commands.end()) return ret;
+  auto pit = it;
+  int pfds[2] = { -1, -1 };
+  for(++it; it != commands.end(); pit = it, ++it) {
+    int fds[2];
+    if(pipe(fds) == -1) exit(1); // TODO: handle error
+    ret.push_handle(pit->run(new pipeline_redirection(pfds, fds)));
+    std::copy(fds, fds + 2, pfds);
+  }
+  int fds[2] = { -1, -1 };
+  ret.push_handle(pit->run(new pipeline_redirection(pfds, fds)));
+
+  return ret;
+}
+
+Exit PipeLine::run_wait() {
+  Exit ret = run();
+  ret.wait();
+  return ret;
+}
+
+// Redirection operators
+Command& operator>(Command& cmd, from_to ft) {
+  cmd.push_setter(new fd_redirection_setter(ft.from, ft.to));
+  return cmd;
+}
+
+PipeLine& operator|(PipeLine& p1, PipeLine&& p2) {
+  for(auto& it : p2.commands)
+    p1.push_command(std::move(it));
+  return p1;
 }
 } // namespace noshell

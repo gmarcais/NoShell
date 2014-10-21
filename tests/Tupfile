@@ -3,7 +3,7 @@ include_rules
 CXXFLAGS += -I$(TUP_CWD) -I$(PROJECT_ROOT)/include
 
 # Helper programs
-: foreach kill_self.cc |> !cxxld |> {helpers}
+: foreach kill_self.cc puts_to.cc |> !cxxld |> {helpers}
 
 
 # Compile Google test library and things common to tests
@@ -15,7 +15,7 @@ CLIBS = libgtest_main.a $(PROJECT_ROOT)/lib/libnoshell.a
 LDFLAGS  += -L$(TUP_CWD) -L$(PROJECT_ROOT)/lib 
 LDLIBS = -lgtest_main -lnoshell
 
-TESTS = test_status.cc test_simple_command.cc test_cmd_redirection.cc
+TESTS = test_status.cc test_simple_command.cc test_cmd_redirection.cc test_pipeline.cc
 
 !run_test = |> ^ RUN   %f^ export TEST_TMP=%B.tmp; touch $TEST_TMP; @(VALGRIND) ./%f > %o 2>&1 |> %B.log | %B.tmp
 
