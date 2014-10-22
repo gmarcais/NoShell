@@ -57,6 +57,7 @@ public:
   friend PipeLine& operator<(PipeLine& pl, const char* path);
 };
 
+inline PipeLine C(const std::vector<std::string>& l) { return PipeLine(Command(l.cbegin(), l.cend())); }
 inline PipeLine C(std::initializer_list<std::string> l) { return PipeLine(Command(l)); }
 // inline PipeLine C(std::string s) { return PipeLine(Command(std::vector<std::string>(1, s))); }
 inline PipeLine create_pipe(std::vector<std::string>& cmds) { return PipeLine(Command(std::move(cmds))); }
