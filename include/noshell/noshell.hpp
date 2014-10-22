@@ -61,19 +61,37 @@ public:
   friend PipeLine& operator<(PipeLine& pl, const char* path);
 };
 
+// Structure to create pipeline object. Works with arbitrary number of
+// arguments, either string, const char* or anything that can be
+// transformed to a string with std::to_string.
+template<typename T>
+inline std::string convert_to_string(T x) { return std::to_string(x); }
+template<>
+inline std::string convert_to_string(std::string x) { return x; }
+template<>
+inline std::string convert_to_string(const char* x) { return std::string(x); }
+
+template<typename T, typename... Args>
+struct create_pipe {
+  static PipeLine append(std::vector<std::string>& cmds, T x, Args... args) {
+    cmds.push_back(convert_to_string(x));
+    return create_pipe<Args...>::append(cmds, args...);
+  }
+};
+template<typename T>
+struct create_pipe<T> {
+  static PipeLine append(std::vector<std::string>& cmds, T x) {
+    cmds.push_back(convert_to_string(x));
+    return PipeLine(Command(std::move(cmds)));
+  }
+};
+
 inline PipeLine C(const std::vector<std::string>& l) { return PipeLine(Command(l.cbegin(), l.cend())); }
 inline PipeLine C(std::initializer_list<std::string> l) { return PipeLine(Command(l)); }
-// inline PipeLine C(std::string s) { return PipeLine(Command(std::vector<std::string>(1, s))); }
-inline PipeLine create_pipe(std::vector<std::string>& cmds) { return PipeLine(Command(std::move(cmds))); }
-template<typename... Args>
-PipeLine create_pipe(std::vector<std::string>& cmds, std::string s, Args... args) {
-  cmds.push_back(s);
-  return create_pipe(cmds, args...);
-}
 template<typename... Args>
 PipeLine C(Args... args) {
   std::vector<std::string> cmds;
-  return create_pipe(cmds, args...);
+  return create_pipe<Args...>::append(cmds, args...);
 }
 
 // Define a literal operator
@@ -82,7 +100,8 @@ struct literal_create_pipe {
   std::vector<std::string> cmds;
   literal_create_pipe(std::string&& c) { cmds.push_back(std::move(c)); }
   template<typename... Args>
-  PipeLine operator()(Args... args) { return create_pipe(cmds, args...); }
+  PipeLine operator()(Args... args) { return create_pipe<Args...>::append(cmds, args...); }
+  PipeLine operator()() { return PipeLine(Command(std::move(cmds))); }
 };
 inline literal_create_pipe operator""_C(const char* c, size_t s) { return literal_create_pipe(std::string(c, s)); }
 };

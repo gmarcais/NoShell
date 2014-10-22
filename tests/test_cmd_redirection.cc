@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <stdexcept>
-// #include <ext/stdio_filebuf.h>
+#include <string>
 #include <gtest/gtest.h>
 #include <noshell/noshell.hpp>
 
@@ -25,7 +25,7 @@ protected:
 TEST_F(CmdRedirection, OutputFD) {
   int fd = open(getenv("TEST_TMP"), O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
   ASSERT_NE(-1, fd);
-  NS::Exit e = NS::C("./puts_to", "1", "coucou") > fd;
+  NS::Exit e = NS::C("./puts_to", 1, "coucou") > fd;
   close(fd);
 
   EXPECT_TRUE(e.success());
@@ -44,7 +44,7 @@ TEST_F(CmdRedirection, OutputBadFile) {
 }
 
 TEST_F(CmdRedirection, OutputTmpFile) {
-  NS::Exit e = NS::C("./puts_to", "1", "coucou") > getenv("TEST_TMP");
+  NS::Exit e = NS::C("./puts_to", 1, "coucou") > getenv("TEST_TMP");
 
   EXPECT_TRUE(e.success());
   std::ifstream tmp(getenv("TEST_TMP"));
@@ -159,7 +159,7 @@ TEST_F(CmdRedirection, InputPipe) {
 
 TEST_F(CmdRedirection, OutputStream) {
   NS::istream is;
-  NS::Exit e = NS::C("./puts_to", "1", "coucou", "hello") | is;
+  NS::Exit e = NS::C("./puts_to", 1, "coucou", "hello") | is;
   ASSERT_FALSE(e[0].setup_error());
   ASSERT_TRUE(is.good());
 

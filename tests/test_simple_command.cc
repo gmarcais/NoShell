@@ -47,7 +47,7 @@ TEST(Status, Bad) {
 
 
 TEST(Status, Signal) {
-  NS::Exit e = "sleep"_C("10").run();
+  NS::Exit e = "sleep"_C(10).run();
   kill(e[0].pid, SIGTERM);
   e.wait();
   EXPECT_FALSE(e.success());
