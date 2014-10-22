@@ -117,8 +117,7 @@ TEST_F(CmdRedirection, InputFile) {
 
 TEST_F(CmdRedirection, OutputPipe) {
   FILE* f = nullptr;
-  auto cmd = NS::C("./puts_to", "1", "coucou", "hello") | f;
-  auto e = cmd.run();
+  NS::Exit e = NS::C("./puts_to", "1", "coucou", "hello") | f;
   ASSERT_FALSE(e[0].setup_error());
   ASSERT_NE(nullptr, f);
   ASSERT_NE(-1, fileno(f));
@@ -137,8 +136,7 @@ TEST_F(CmdRedirection, OutputPipe) {
 
 TEST_F(CmdRedirection, InputPipe) {
   FILE* f = nullptr;
-  auto cmd = f | NS::C("cat") > getenv("TEST_TMP");
-  auto e = cmd.run();
+  NS::Exit e = f | NS::C("cat") > getenv("TEST_TMP");
 
   ASSERT_FALSE(e[0].setup_error());
   ASSERT_NE(nullptr, f);
@@ -161,8 +159,7 @@ TEST_F(CmdRedirection, InputPipe) {
 
 TEST_F(CmdRedirection, OutputStream) {
   NS::istream is;
-  auto cmd = NS::C("./puts_to", "1", "coucou", "hello") | is;
-  auto e = cmd.run();
+  NS::Exit e = NS::C("./puts_to", "1", "coucou", "hello") | is;
   ASSERT_FALSE(e[0].setup_error());
   ASSERT_TRUE(is.good());
 
@@ -180,8 +177,7 @@ TEST_F(CmdRedirection, OutputStream) {
 
 TEST_F(CmdRedirection, InputStream) {
   NS::ostream os;
-  auto cmd = os | NS::C("cat") > getenv("TEST_TMP");
-  auto e = cmd.run();
+  NS::Exit e = os | NS::C("cat") > getenv("TEST_TMP");
 
   ASSERT_FALSE(e[0].setup_error());
   ASSERT_TRUE(os.good());

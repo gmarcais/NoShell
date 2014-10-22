@@ -133,7 +133,7 @@ void Handle::wait() {
     set_status(status);
 }
 
-Exit::Exit(PipeLine&& rhs) : Exit(rhs.run_wait()) { }
+Exit::Exit(PipeLine&& rhs) : Exit(rhs.run_wait_auto()) { }
 
 Exit PipeLine::run() {
   Exit ret;
@@ -160,6 +160,13 @@ Exit PipeLine::run_wait() {
   return ret;
 }
 
+Exit PipeLine::run_wait_auto() {
+  Exit ret = run();
+  if(auto_wait)
+    ret.wait();
+  return ret;
+}
+
 // Redirection operators
 PipeLine& operator>(PipeLine& pl, const from_to& ft) {
   if(!pl.commands.empty())
@@ -170,6 +177,7 @@ PipeLine& operator>(PipeLine& pl, const from_to& ft) {
 PipeLine& operator|(PipeLine& p1, PipeLine&& p2) {
   for(auto& it : p2.commands)
     p1.push_command(std::move(it));
+  p1.auto_wait = p1.auto_wait && p2.auto_wait;
   return p1;
 }
 
@@ -195,31 +203,37 @@ PipeLine& operator<(PipeLine& pl, const char* path) {
 
 PipeLine& operator|(PipeLine& pl, int& fd) {
   pl.commands.back().push_setter(new fd_pipe_redirection_setter(1, fd, fd_pipe_redirection_setter::READ));
+  pl.auto_wait = false;
   return pl;
 }
 
 PipeLine& operator|(int& fd, PipeLine& pl){
   pl.commands.front().push_setter(new fd_pipe_redirection_setter(0, fd, fd_pipe_redirection_setter::WRITE));
+  pl.auto_wait = false;
   return pl;
 }
 
 PipeLine& operator|(PipeLine& pl, FILE*& f) {
   pl.commands.back().push_setter(new stdio_pipe_redirection_setter(1, f, fd_pipe_redirection_setter::READ));
+  pl.auto_wait = false;
   return pl;
 }
 
 PipeLine& operator|(FILE*& f, PipeLine& pl) {
   pl.commands.front().push_setter(new stdio_pipe_redirection_setter(0, f, fd_pipe_redirection_setter::WRITE));
+  pl.auto_wait = false;
   return pl;
 }
 
 PipeLine& operator|(PipeLine& pl, istream& is) {
   pl.commands.back().push_setter(new stream_pipe_redirection_setter<istream>(1, is));
+  pl.auto_wait = false;
   return pl;
 }
 
 PipeLine& operator|(ostream& os, PipeLine& pl) {
   pl.commands.front().push_setter(new stream_pipe_redirection_setter<ostream>(0, os));
+  pl.auto_wait = false;
   return pl;
 }
 } // namespace noshell

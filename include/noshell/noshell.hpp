@@ -34,12 +34,16 @@ public:
 
 class PipeLine {
   std::vector<Command> commands;
+  bool                 auto_wait;
 
 public:
-  PipeLine() { static_assert(std::is_nothrow_move_constructible<Command>::value, "Command must be movable noexcept"); }
-  PipeLine(Command&& c) { push_command(std::move(c)); }
+  PipeLine() : auto_wait(true) {
+    static_assert(std::is_nothrow_move_constructible<Command>::value, "Command must be movable noexcept");
+  }
+  PipeLine(Command&& c) : auto_wait(true) { push_command(std::move(c)); }
   Exit run();
   Exit run_wait();
+  Exit run_wait_auto();
 
   void push_command(Command&& c) { commands.push_back(std::move(c)); }
 
