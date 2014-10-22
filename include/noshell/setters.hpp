@@ -21,6 +21,7 @@ struct process_setup {
 };
 
 struct process_setter {
+  virtual ~process_setter() { }
   virtual process_setup* make_setup() = 0;
 };
 
@@ -51,6 +52,7 @@ struct path_redirection_setter : public process_setter {
   const path_type   type;
   path_redirection_setter(int f, const char* p, path_type t = READ) : from(f), path(p), type(t) { }
   path_redirection_setter(int f, const std::string& p, path_type t = READ) : from(f), path(p), type(t) { }
+  ~path_redirection_setter() { }
   virtual process_setup* make_setup();
 };
 

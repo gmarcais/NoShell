@@ -4,7 +4,7 @@
 !lxxd  = |> ^ LXX   %o^ $(CXX) $(T_LDFLAGS) $(LDFLAGS) $(LDFLAGS_%B) $(LOADLIBES) %f $(LDLIBS) -o %o |>
 !cld   = |> ^ CLD   %o^ $(CC) $(T_CPPFLAGS) $(CPPFLAGS) $(T_CFLAGS) $(CFLAGS_%B) $(CFLAGS) $(LDFLAGS) %f -o %o |>
 !cxxld = |> ^ CXXLD %o^ $(CXX) $(T_CPPFLAGS) $(CPPFLAGS) $(T_CXXFLAGS) $(CXXFLAGS_%B) $(CXXFLAGS) @(CXXFLAGS) $(T_LDFLAGS) $(LDFLAGS) $(LDFLAGS_%B) $(LOADLIBES) %f $(LDLIBS) -o %o |> %B
-!ar    = |> ^ AR    %o^ $(AR) sruv $(T_ARFLAGS) $(ARFLAGS) %o %f |>
+!ar    = |> ^ AR    %o^ $(AR) sru $(T_ARFLAGS) $(ARFLAGS) %o %f |>
 !yaggo = |> ^ YAGGO %f^ $(YAGGO) %f |> %B.hpp
 
 # : foreach *.c |> !cc |>

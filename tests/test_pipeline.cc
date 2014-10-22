@@ -22,7 +22,15 @@ TEST(PipeLine, OneCommand) {
 } // PipeLine.OneCommand
 
 TEST(PipeLine, TwoCommands) {
-  NS::Exit e = NS::C("./puts_to", "1", "line1", "line2") | NS::C("wc", "-l");
+  NS::istream res;
+  auto cmd = NS::C("./puts_to", "1", "line1", "line2") | NS::C("wc", "-l") | res;
+  auto e = cmd.run();
+  std::string line;
+  EXPECT_TRUE(std::getline(res, line));
+  EXPECT_EQ("2", line);
+  EXPECT_FALSE(std::getline(res, line));
+  res.close();
+  e.wait();
   EXPECT_TRUE(e.success());
 
   EXPECT_FALSE(e[0].setup_error());

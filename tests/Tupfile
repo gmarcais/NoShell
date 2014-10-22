@@ -15,8 +15,8 @@ CLIBS = libgtest_main.a $(PROJECT_ROOT)/lib/libnoshell.a
 LDFLAGS  += -L$(TUP_CWD) -L$(PROJECT_ROOT)/lib 
 LDLIBS = -lgtest_main -lnoshell
 
-TESTS  = test_status.cc test_simple_command.cc test_cmd_redirection.cc test_pipeline.cc
-TESTS += test_extra_fds.cc
+TESTS  = test_simple_command.cc test_cmd_redirection.cc test_pipeline.cc
+TESTS += test_extra_fds.cc test_literal.cc
 
 !run_test = |> ^ RUN   %f^ export TEST_TMP=%B.tmp; touch $TEST_TMP; @(VALGRIND) ./%f > %o 2>&1 |> %B.log | %B.tmp
 

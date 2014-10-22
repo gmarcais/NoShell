@@ -72,6 +72,17 @@ PipeLine C(Args... args) {
   return create_pipe(cmds, args...);
 }
 
+// Define a literal operator
+namespace literal {
+struct literal_create_pipe {
+  std::vector<std::string> cmds;
+  literal_create_pipe(std::string&& c) { cmds.push_back(std::move(c)); }
+  template<typename... Args>
+  PipeLine operator()(Args... args) { return create_pipe(cmds, args...); }
+};
+inline literal_create_pipe operator""_C(const char* c, size_t s) { return literal_create_pipe(std::string(c, s)); }
+};
+
 PipeLine& operator>(PipeLine& cmd, const from_to& ft);
 inline PipeLine&& operator>(PipeLine&& cmd, const from_to& ft) { return std::move(cmd > ft); }
 inline PipeLine& operator>(PipeLine& cmd, int fd) { return cmd > from_to(1, fd); }
