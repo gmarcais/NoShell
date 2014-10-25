@@ -270,18 +270,31 @@ TEST_F(CmdRedirection, OutPipe2) {
   ASSERT_TRUE(e.success());
 } // CmdRedirection.OutPipe2
 
-// TEST_F(CmdRedirection, OutStream1) {
-//   NS::istream is;
-//   NS::Exit e = "./puts_to"_C(1, "yougadie") | NS::R(1).to(is);
+TEST_F(CmdRedirection, OutStream1) {
+  NS::istream is;
+  NS::Exit e = "./puts_to"_C(1, "yougadie") | NS::R(1, 2).to(is);
 
-//   std::string line;
-//   EXPECT_TRUE(std::getline(is, line));
-//   EXPECT_EQ("yougadi", line);
-//   EXPECT_FALSE(std::getline(is, line));
+  std::string line;
+  EXPECT_TRUE(std::getline(is, line));
+  EXPECT_EQ("yougadie", line);
+  EXPECT_FALSE(std::getline(is, line));
 
-//   e.wait();
-//   ASSERT_TRUE(e.success());
-// } // CmdRedirection.OutPipe1
+  e.wait();
+  ASSERT_TRUE(e.success());
+} // CmdRedirection.OutPipe1
+
+TEST_F(CmdRedirection, OutStream2) {
+  NS::istream is;
+  NS::Exit e = "./puts_to"_C(2, "pouf pouf") | NS::R(1, 2).to(is);
+
+  std::string line;
+  EXPECT_TRUE(std::getline(is, line));
+  EXPECT_EQ("pouf pouf", line);
+  EXPECT_FALSE(std::getline(is, line));
+
+  e.wait();
+  ASSERT_TRUE(e.success());
+} // CmdRedirection.OutPipe1
 
 
 } // empty namespace

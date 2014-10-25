@@ -6,38 +6,42 @@
 #include <ext/stdio_filebuf.h>
 
 namespace noshell {
-struct from_to_fd_ref {
-  std::vector<int> from;
-  int&             to;
-
-  from_to_fd_ref(int f, int& t) : from(1, f), to(t) { }
-  from_to_fd_ref(const std::vector<int>& f, int& t) : from(f), to(t) { }
+// File descriptor type. Behaves like an int, can be initialize from
+// an int or FILE*.
+struct fd_type {
+  int fd;
+  fd_type(int x) : fd(x) { }
+  fd_type(FILE* x) : fd(fileno(x)) { }
+  operator int() const { return fd; }
+  operator int&() { return fd; }
 };
+typedef std::vector<fd_type> fd_list_type;
 
-struct from_to_stdio_ref {
-  std::vector<int> from;
-  FILE*&           to;
+template<typename T>
+struct from_to_ref {
+  fd_list_type from;
+  T&             to;
 
-  from_to_stdio_ref(int f, FILE*& t) : from(1, f), to(t) { }
-  from_to_stdio_ref(const std::vector<int>& f, FILE*& t) : from(f), to(t) { }
+  from_to_ref(int f, T& t) : from(1, f), to(t) { }
+  from_to_ref(const fd_list_type& f, T& t) : from(f), to(t) { }
 };
 
 struct from_to_fd {
-  std::vector<int> from;
-  int              to;
+  fd_list_type from;
+  int          to;
   from_to_fd(int f, int t) : from(1, f), to(t) { }
   from_to_fd(FILE* f, int t) : from(1, fileno(f)), to(t) { }
   from_to_fd(int f, FILE* t) : from(1, f), to(fileno(t)) { }
   from_to_fd(FILE* f, FILE* t) : from(1, fileno(f)), to(fileno(t)) { }
-  from_to_fd(const std::vector<int>& f, int t) : from(f), to(t) { }
-  from_to_fd(from_to_fd_ref&& r) : from(std::move(r.from)), to(r.to) { }
-  from_to_fd(from_to_stdio_ref&& r) : from(std::move(r.from)), to(fileno(r.to)) { }
+  from_to_fd(const fd_list_type& f, int t) : from(f), to(t) { }
+  from_to_fd(from_to_ref<int>&& r) : from(std::move(r.from)), to(r.to) { }
+  from_to_fd(from_to_ref<FILE*>&& r) : from(std::move(r.from)), to(fileno(r.to)) { }
 };
 
 struct from_to_path {
-  std::vector<int> from;
+  fd_list_type from;
   std::string to;
-  from_to_path(std::vector<int>&& f, std::string&& p) : from(std::move(f)), to(std::move(p)) { }
+  from_to_path(fd_list_type&& f, std::string&& p) : from(std::move(f)), to(std::move(p)) { }
   from_to_path(int f, std::string&& p) : from(1, f), to(std::move(p)) { }
   from_to_path(int f, const char* p) : from(1, f), to(p) { }
 };
@@ -58,7 +62,7 @@ struct process_setter {
 struct fd_redirection : public process_setup {
   from_to_fd ft;
   fd_redirection(int f, int t) : ft(f, t) { }
-  fd_redirection(const std::vector<int>& f, int t) : ft(f, t) { }
+  fd_redirection(const fd_list_type& f, int t) : ft(f, t) { }
   fd_redirection(const from_to_fd& f) : ft(f) { }
   virtual bool child_setup();
 };
@@ -66,7 +70,7 @@ struct fd_redirection : public process_setup {
 struct fd_redirection_setter : public process_setter {
   const from_to_fd ft;
   fd_redirection_setter(int f, int t) : ft(f, t) { }
-  fd_redirection_setter(std::vector<int>&& f, int t) : ft(std::move(f), t) { }
+  fd_redirection_setter(fd_list_type&& f, int t) : ft(std::move(f), t) { }
   fd_redirection_setter(from_to_fd&& f) : ft(std::move(f)) { }
   virtual process_setup* make_setup() { return new fd_redirection(ft); }
 };
@@ -74,7 +78,7 @@ struct fd_redirection_setter : public process_setter {
 // Setup a redirection to a named file, either in input or output.
 struct path_redirection : public fd_redirection {
   path_redirection(int f, int t) : fd_redirection(f, t) { }
-  path_redirection(const std::vector<int>& f, int t) : fd_redirection(f, t) { }
+  path_redirection(const fd_list_type& f, int t) : fd_redirection(f, t) { }
   virtual ~path_redirection();
   virtual bool parent_setup();
 };
@@ -108,11 +112,11 @@ struct pipeline_redirection : public process_setup {
 // descriptor of the parent process (or the converse from a file
 // descriptor of the parent process to the input of the child).
 struct fd_pipe_redirection : public process_setup {
-  std::vector<int> from;
+  fd_list_type from;
   int              pipe_dup;
   int              pipe_close;
   fd_pipe_redirection(int f, int d, int c) : from(1, f), pipe_dup(d), pipe_close(c) { }
-  fd_pipe_redirection(const std::vector<int> f, int d, int c) : from(f), pipe_dup(d), pipe_close(c) { }
+  fd_pipe_redirection(const fd_list_type f, int d, int c) : from(f), pipe_dup(d), pipe_close(c) { }
   virtual ~fd_pipe_redirection();
   virtual bool child_setup();
   virtual bool parent_setup();
@@ -120,11 +124,11 @@ struct fd_pipe_redirection : public process_setup {
 
 struct fd_pipe_redirection_setter : public process_setter {
   enum pipe_type { READ, WRITE };
-  const from_to_fd_ref ft;
-  const pipe_type      type;
+  const from_to_ref<int> ft;
+  const pipe_type        type;
   fd_pipe_redirection_setter(int f, int& t, pipe_type p) : ft(f, t), type(p) { }
-  fd_pipe_redirection_setter(const std::vector<int>& f, int& t, pipe_type p) : ft(std::move(f), t), type(p) { }
-  fd_pipe_redirection_setter(from_to_fd_ref&& r, pipe_type p) : ft(std::move(r)), type(p) { }
+  fd_pipe_redirection_setter(const fd_list_type& f, int& t, pipe_type p) : ft(std::move(f), t), type(p) { }
+  fd_pipe_redirection_setter(from_to_ref<int>&& r, pipe_type p) : ft(std::move(r)), type(p) { }
   virtual process_setup* make_setup();
 };
 
@@ -137,7 +141,7 @@ struct stdio_pipe_redirection_setter : public fd_pipe_redirection_setter {
     , fd(-1)
     , file(file_)
   { }
-  stdio_pipe_redirection_setter(from_to_stdio_ref&& ft, fd_pipe_redirection_setter::pipe_type p)
+  stdio_pipe_redirection_setter(from_to_ref<FILE*>&& ft, fd_pipe_redirection_setter::pipe_type p)
     : fd_pipe_redirection_setter(std::move(ft.from), fd, p)
     , fd(-1)
     , file(ft.to)
@@ -146,15 +150,6 @@ struct stdio_pipe_redirection_setter : public fd_pipe_redirection_setter {
 };
 
 // Same as above but with a C++ stream
-template<typename ST>
-struct from_to_stream_ref {
-  typedef ST stream_type;
-  std::vector<int> from;
-  ST&              to;
-
-  from_to_stream_ref(int f, ST& t) : from(1, f), to(t) { }
-  from_to_stream_ref(const std::vector<int>& f, ST& t) : from(f), to(t) { }
-};
 class istream : public std::istream {
 public:
   istream() : std::istream(nullptr) { }
@@ -181,6 +176,7 @@ struct stream_traits<ostream> {
 };
 template<typename ST>
 struct stream_pipe_redirection_setter : public fd_pipe_redirection_setter {
+  typedef fd_pipe_redirection_setter super;
   int fd;
   ST&  stream;
   stream_pipe_redirection_setter(int f, ST& s)
@@ -188,7 +184,12 @@ struct stream_pipe_redirection_setter : public fd_pipe_redirection_setter {
     , fd(-1)
     , stream(s)
   { }
-  stream_pipe_redirection_setter(from_to_stream_ref<ST>&& ft)
+  stream_pipe_redirection_setter(from_to_ref<ST>&& ft)
+    : fd_pipe_redirection_setter(std::move(ft.from), fd, stream_traits<ST>::type)
+    , fd(-1)
+    , stream(ft.to)
+  { }
+  stream_pipe_redirection_setter(from_to_ref<ST>&& ft, super::pipe_type p)
     : fd_pipe_redirection_setter(std::move(ft.from), fd, stream_traits<ST>::type)
     , fd(-1)
     , stream(ft.to)
@@ -200,6 +201,32 @@ struct stream_pipe_redirection_setter : public fd_pipe_redirection_setter {
     return setup;
   }
 };
+
+
+// Traits to select the proper setter
+template<typename T>
+struct setter_traits { };
+
+template<>
+struct setter_traits<int> {
+  typedef fd_pipe_redirection_setter setter_type;
+};
+
+template<>
+struct setter_traits<FILE*> {
+  typedef stdio_pipe_redirection_setter setter_type;
+};
+
+template<>
+struct setter_traits<istream> {
+  typedef stream_pipe_redirection_setter<istream> setter_type;
+};
+
+template<>
+struct setter_traits<ostream> {
+  typedef stream_pipe_redirection_setter<ostream> setter_type;
+};
+
 } // namespace noshell
 
 #endif /* __NOSHELL_SETTERS_H__ */

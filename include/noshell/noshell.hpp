@@ -48,12 +48,10 @@ public:
   void push_command(Command&& c) { commands.push_back(std::move(c)); }
 
   friend PipeLine& operator|(PipeLine& p1, PipeLine&& p2);
-  friend PipeLine& operator|(PipeLine& pl, from_to_fd_ref&& ft);
-  friend PipeLine& operator|(from_to_fd_ref&& fd, PipeLine& pl);
-  friend PipeLine& operator|(PipeLine& pl, from_to_stdio_ref&& ft);
-  friend PipeLine& operator|(from_to_stdio_ref&& f, PipeLine& pl);
-  friend PipeLine& operator|(PipeLine& pl, from_to_stream_ref<istream>&& ft);
-  friend PipeLine& operator|(ostream& os, PipeLine& pl);
+  template<typename T>
+  friend PipeLine& operator|(PipeLine& pl, from_to_ref<T>&& ft);
+  template<typename T>
+  friend PipeLine& operator|(from_to_ref<T>&& ft, PipeLine& pl);
   friend PipeLine& operator>(PipeLine& pl, from_to_fd&& ft);
   friend PipeLine& operator>(PipeLine& pl, from_to_path&& ft);
   friend PipeLine& operator>>(PipeLine& pl, from_to_path&& ft);
@@ -100,13 +98,13 @@ inline int get_fileno(int fd) { return fd; }
 inline int get_fileno(FILE* f) { return ::fileno(f); }
 
 struct from_to_generic {
-  std::vector<int> from;
+  fd_list_type from;
   from_to_path to(std::string&& path) { return from_to_path(std::move(from), std::move(path)); }
   from_to_fd to(const int& fd) { return from_to_fd(std::move(from), fd); }
   //  from_to_fd to(FILE* f) { return from_to_fd(std::move(from), fileno(f)); }
-  from_to_fd_ref to(int& fd) { return from_to_fd_ref(std::move(from), fd); }
-  from_to_stdio_ref to(FILE*& fd) { return from_to_stdio_ref(std::move(from), fd); }
-  from_to_stream_ref<istream> to(istream& is) { return from_to_stream_ref<istream>(std::move(from), is); }
+  from_to_ref<int> to(int& fd) { return from_to_ref<int>(std::move(from), fd); }
+  from_to_ref<FILE*> to(FILE*& fd) { return from_to_ref<FILE*>(std::move(from), fd); }
+  from_to_ref<istream> to(istream& is) { return from_to_ref<istream>(std::move(from), is); }
   template<typename T>
   auto operator()(T x) -> decltype(to(x)) { return to(x); }
 };
@@ -180,33 +178,35 @@ inline PipeLine&& operator<(PipeLine&& pl, std::string&& path) { return std::mov
 PipeLine& operator|(PipeLine& p1, PipeLine&& p2);
 inline PipeLine&& operator|(PipeLine&& p1, PipeLine&& p2) { return std::move(p1 | std::move(p2)); }
 
-PipeLine& operator|(PipeLine& pl, from_to_fd_ref&& ft);
-inline PipeLine&& operator|(PipeLine&& pl, from_to_fd_ref&& ft) { return std::move(pl | std::move(ft)); }
-inline PipeLine& operator|(PipeLine& pl, int& fd) { return pl | from_to_fd_ref(1, fd); }
-inline PipeLine&& operator|(PipeLine&& pl, int& fd) { return std::move(pl | fd); }
+template<typename T>
+PipeLine& operator|(PipeLine& pl, from_to_ref<T>&& ft) {
+  typedef typename setter_traits<T>::setter_type setter_type;
+  pl.commands.back().push_setter(new setter_type(std::move(ft), fd_pipe_redirection_setter::READ));
+  pl.auto_wait = false;
+  return pl;
+}
 
-PipeLine& operator|(PipeLine& pl, from_to_stdio_ref&& ft);
-inline PipeLine&& operator|(PipeLine&& pl, from_to_stdio_ref&& ft) { return std::move(pl | std::move(ft)); }
-inline PipeLine& operator|(PipeLine& pl, FILE*& f) { return pl | from_to_stdio_ref(1, f); }
-inline PipeLine&& operator|(PipeLine&& pl, FILE*& f) { return std::move(pl | f); }
+template<typename T>
+PipeLine& operator|(from_to_ref<T>&& ft, PipeLine& pl) {
+  typedef typename setter_traits<T>::setter_type setter_type;
+  pl.commands.front().push_setter(new setter_type(std::move(ft), fd_pipe_redirection_setter::WRITE));
+  pl.auto_wait = false;
+  return pl;
+}
 
-PipeLine& operator|(from_to_fd_ref&& ft, PipeLine& pl);
-inline PipeLine&& operator|(from_to_fd_ref&& ft, PipeLine&& pl) { return std::move(std::move(ft) | pl); }
-inline PipeLine& operator|(int& fd, PipeLine& pl) { return from_to_fd_ref(0, fd) | pl; }
-inline PipeLine&& operator|(int& fd, PipeLine&& pl) { return std::move(fd | pl); }
+template<typename T>
+inline PipeLine&& operator|(PipeLine&& pl, from_to_ref<T>&& ft) { return std::move(pl | std::move(ft)); }
+template<typename T>
+inline PipeLine& operator|(PipeLine& pl, T& x) { return pl | from_to_ref<T>(1, x); }
+template<typename T>
+inline PipeLine&& operator|(PipeLine&& pl, T& x) { return std::move(pl | x); }
 
-PipeLine& operator|(from_to_stdio_ref&& ft, PipeLine& pl);
-inline PipeLine&& operator|(from_to_stdio_ref&& ft, PipeLine&& pl) { return std::move(std::move(ft) | pl); }
-inline PipeLine& operator|(FILE*& f, PipeLine& pl) { return from_to_stdio_ref(0, f) | pl; }
-inline PipeLine&& operator|(FILE*& f, PipeLine&& pl)  { return std::move(f | pl); }
-
-PipeLine& operator|(PipeLine& pl, from_to_stream_ref<istream>&& ft);
-inline PipeLine&& operator|(PipeLine&& pl, from_to_stream_ref<istream>&& ft) { return std::move(pl | std::move(pl)); }
-inline PipeLine& operator|(PipeLine& pl, istream& is) { return pl | from_to_stream_ref<istream>(1, is); }
-inline PipeLine&& operator|(PipeLine&& pl, istream& is) { return std::move(pl | is); }
-
-PipeLine& operator|(ostream& os, PipeLine& pl);
-inline PipeLine&& operator|(ostream& os, PipeLine&& pl) { return std::move(os | pl); }
+template<typename T>
+inline PipeLine&& operator|(from_to_ref<T>&& ft, PipeLine&& pl) { return std::move(std::move(ft) | pl); }
+template<typename T>
+inline PipeLine& operator|(T& x, PipeLine& pl) { return from_to_ref<T>(0, x) | pl; }
+template<typename T>
+inline PipeLine&& operator|(T& x, PipeLine&& pl) { return std::move(x | pl); }
 } // namespace noshell
 
 #endif /* __NOSHELL_H__ */

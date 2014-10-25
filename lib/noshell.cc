@@ -200,40 +200,4 @@ PipeLine& operator<(PipeLine& pl, from_to_path&& ft) {
   pl.commands.front().push_setter(new path_redirection_setter(std::move(ft), path_redirection_setter::READ));
   return pl;
 }
-
-PipeLine& operator|(PipeLine& pl, from_to_fd_ref&& ft) {
-  pl.commands.back().push_setter(new fd_pipe_redirection_setter(std::move(ft), fd_pipe_redirection_setter::READ));
-  pl.auto_wait = false;
-  return pl;
-}
-
-PipeLine& operator|(from_to_fd_ref&& ft, PipeLine& pl){
-  pl.commands.front().push_setter(new fd_pipe_redirection_setter(std::move(ft), fd_pipe_redirection_setter::WRITE));
-  pl.auto_wait = false;
-  return pl;
-}
-
-PipeLine& operator|(PipeLine& pl, from_to_stdio_ref&& ft) {
-  pl.commands.back().push_setter(new stdio_pipe_redirection_setter(std::move(ft), fd_pipe_redirection_setter::READ));
-  pl.auto_wait = false;
-  return pl;
-}
-
-PipeLine& operator|(from_to_stdio_ref&& ft, PipeLine& pl) {
-  pl.commands.front().push_setter(new stdio_pipe_redirection_setter(std::move(ft), fd_pipe_redirection_setter::WRITE));
-  pl.auto_wait = false;
-  return pl;
-}
-
-PipeLine& operator|(PipeLine& pl, from_to_stream_ref<istream>&& ft) {
-  pl.commands.back().push_setter(new stream_pipe_redirection_setter<istream>(std::move(ft)));
-  pl.auto_wait = false;
-  return pl;
-}
-
-PipeLine& operator|(ostream& os, PipeLine& pl) {
-  pl.commands.front().push_setter(new stream_pipe_redirection_setter<ostream>(0, os));
-  pl.auto_wait = false;
-  return pl;
-}
 } // namespace noshell
