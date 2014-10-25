@@ -150,18 +150,23 @@ struct stdio_pipe_redirection_setter : public fd_pipe_redirection_setter {
 };
 
 // Same as above but with a C++ stream
-class istream : public std::istream {
+template<typename T>
+class base_stream : public T {
 public:
-  istream() : std::istream(nullptr) { }
-  ~istream() { close(); }
+  base_stream() : T(nullptr) { }
+  ~base_stream() { close(); }
+  void open(int fd, std::ios::openmode mode) {
+    delete this->rdbuf(new __gnu_cxx::stdio_filebuf<char>(fd, mode));
+  }
+
   void close() { delete this->rdbuf(nullptr); }
+  int fd() const {
+    auto buf = this->rdbuf();
+    return buf ? static_cast<__gnu_cxx::stdio_filebuf<char>*>(buf)->fd() : -1;
+  }
 };
-class ostream : public std::ostream {
-public:
-  ostream() : std::ostream(nullptr) { }
-  ~ostream() { close(); }
-  void close() { delete this->rdbuf(nullptr); }
-};
+typedef base_stream<std::istream> istream;
+typedef base_stream<std::ostream> ostream;
 
 template<typename ST> struct stream_traits;
 template<>
@@ -197,7 +202,7 @@ struct stream_pipe_redirection_setter : public fd_pipe_redirection_setter {
   virtual process_setup* make_setup() {
     process_setup* setup = fd_pipe_redirection_setter::make_setup();
     if(!setup) return nullptr;
-    delete stream.rdbuf(new __gnu_cxx::stdio_filebuf<char>(fd, stream_traits<ST>::mode));
+    stream.open(fd, stream_traits<ST>::mode);
     return setup;
   }
 };

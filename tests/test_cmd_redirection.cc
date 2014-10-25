@@ -273,6 +273,7 @@ TEST_F(CmdRedirection, OutPipe2) {
 TEST_F(CmdRedirection, OutStream1) {
   NS::istream is;
   NS::Exit e = "./puts_to"_C(1, "yougadie") | NS::R(1, 2).to(is);
+  ASSERT_NE(-1, is.fd());
 
   std::string line;
   EXPECT_TRUE(std::getline(is, line));
@@ -286,6 +287,7 @@ TEST_F(CmdRedirection, OutStream1) {
 TEST_F(CmdRedirection, OutStream2) {
   NS::istream is;
   NS::Exit e = "./puts_to"_C(2, "pouf pouf") | NS::R(1, 2).to(is);
+  ASSERT_NE(-1, is.fd());
 
   std::string line;
   EXPECT_TRUE(std::getline(is, line));
