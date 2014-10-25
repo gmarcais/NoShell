@@ -10,6 +10,7 @@
 
 namespace {
 namespace NS = noshell;
+using namespace NS::literal;
 
 class CmdRedirection : public ::testing::Test {
 protected:
@@ -196,4 +197,91 @@ TEST_F(CmdRedirection, InputStream) {
   EXPECT_EQ("the world", line);
   ASSERT_FALSE(std::getline(tmp, line));
 }
+
+TEST_F(CmdRedirection, OutErr1) {
+  NS::Exit e = "./puts_to"_C(1, "bah") > NS::R(2, 1).to(getenv("TEST_TMP"));
+
+  ASSERT_TRUE(e.success());
+  std::ifstream tmp(getenv("TEST_TMP"));
+  std::string line;
+  ASSERT_TRUE(std::getline(tmp, line));
+  EXPECT_EQ("bah", line);
+  ASSERT_FALSE(std::getline(tmp, line));
+} // CmdRedirection.OutErr1
+
+TEST_F(CmdRedirection, OutErr2) {
+  NS::Exit e = "./puts_to"_C(2, "bou") > NS::R(2, 1).to(getenv("TEST_TMP"));
+
+  ASSERT_TRUE(e.success());
+  std::ifstream tmp(getenv("TEST_TMP"));
+  std::string line;
+  ASSERT_TRUE(std::getline(tmp, line));
+  EXPECT_EQ("bou", line);
+  ASSERT_FALSE(std::getline(tmp, line));
+} // CmdRedirection.OutErr2
+
+TEST_F(CmdRedirection, Path3) {
+  NS::istream is;
+  NS::Exit e = "cat"_C("/dev/fd/3") < 3_R("text_file.txt") | is;
+
+  std::string line;
+  EXPECT_TRUE(std::getline(is, line));
+  EXPECT_EQ("hello", line);
+  EXPECT_TRUE(std::getline(is, line));
+  EXPECT_EQ("the", line);
+  EXPECT_TRUE(std::getline(is, line));
+  EXPECT_EQ("", line);
+  EXPECT_TRUE(std::getline(is, line));
+  EXPECT_EQ("world!", line);
+  EXPECT_FALSE(std::getline(is, line));
+
+  e.wait();
+  ASSERT_TRUE(e.success());
+} // CmdRedirection.Path3
+
+TEST_F(CmdRedirection, OutPipe1) {
+  FILE* out;
+  NS::Exit e = "./puts_to"_C(1, "youpie") | NS::R(2, 1).to(out);
+
+  char* buf = nullptr;
+  size_t n = 0;
+  ASSERT_NE(-1, getline(&buf, &n, out));
+  EXPECT_STREQ("youpie\n", buf);
+  ASSERT_EQ(-1, getline(&buf, &n, out));
+  free(buf);
+
+  e.wait();
+  ASSERT_TRUE(e.success());
+} // CmdRedirection.OutPipe1
+
+TEST_F(CmdRedirection, OutPipe2) {
+  int out;
+  NS::Exit e = "./puts_to"_C(2, "voici") | NS::R(2, 1).to(out);
+
+  char* buf = nullptr;
+  size_t n = 0;
+  FILE* fout = fdopen(out, "r");
+  ASSERT_NE(-1, getline(&buf, &n, fout));
+  EXPECT_STREQ("voici\n", buf);
+  ASSERT_EQ(-1, getline(&buf, &n, fout));
+  free(buf);
+
+  e.wait();
+  ASSERT_TRUE(e.success());
+} // CmdRedirection.OutPipe2
+
+// TEST_F(CmdRedirection, OutStream1) {
+//   NS::istream is;
+//   NS::Exit e = "./puts_to"_C(1, "yougadie") | NS::R(1).to(is);
+
+//   std::string line;
+//   EXPECT_TRUE(std::getline(is, line));
+//   EXPECT_EQ("yougadi", line);
+//   EXPECT_FALSE(std::getline(is, line));
+
+//   e.wait();
+//   ASSERT_TRUE(e.success());
+// } // CmdRedirection.OutPipe1
+
+
 } // empty namespace

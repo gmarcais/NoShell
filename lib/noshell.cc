@@ -168,9 +168,9 @@ Exit PipeLine::run_wait_auto() {
 }
 
 // Redirection operators
-PipeLine& operator>(PipeLine& pl, const from_to& ft) {
+PipeLine& operator>(PipeLine& pl, from_to_fd&& ft) {
   if(!pl.commands.empty())
-    pl.commands.back().push_setter(new fd_redirection_setter(ft.from, ft.to));
+    pl.commands.back().push_setter(new fd_redirection_setter(std::move(ft)));
   return pl;
 }
 
@@ -181,52 +181,52 @@ PipeLine& operator|(PipeLine& p1, PipeLine&& p2) {
   return p1;
 }
 
-PipeLine& operator>(PipeLine& pl, const char* path) {
-  pl.commands.back().push_setter(new path_redirection_setter(1, path, path_redirection_setter::WRITE));
+PipeLine& operator>(PipeLine& pl, from_to_path&& ft) {
+  pl.commands.back().push_setter(new path_redirection_setter(std::move(ft), path_redirection_setter::WRITE));
   return pl;
 }
 
-PipeLine& operator>>(PipeLine& pl, const char* path) {
-  pl.commands.back().push_setter(new path_redirection_setter(1, path, path_redirection_setter::APPEND));
+PipeLine& operator>>(PipeLine& pl, from_to_path&& ft) {
+  pl.commands.back().push_setter(new path_redirection_setter(std::move(ft), path_redirection_setter::APPEND));
   return pl;
 }
 
-PipeLine& operator<(PipeLine& pl, const from_to& ft) {
-  pl.commands.front().push_setter(new fd_redirection_setter(ft.from, ft.to));
+PipeLine& operator<(PipeLine& pl, from_to_fd&& ft) {
+  pl.commands.front().push_setter(new fd_redirection_setter(std::move(ft)));
   return pl;
 }
 
-PipeLine& operator<(PipeLine& pl, const char* path) {
-  pl.commands.front().push_setter(new path_redirection_setter(0, path, path_redirection_setter::READ));
+PipeLine& operator<(PipeLine& pl, from_to_path&& ft) {
+  pl.commands.front().push_setter(new path_redirection_setter(std::move(ft), path_redirection_setter::READ));
   return pl;
 }
 
-PipeLine& operator|(PipeLine& pl, int& fd) {
-  pl.commands.back().push_setter(new fd_pipe_redirection_setter(1, fd, fd_pipe_redirection_setter::READ));
+PipeLine& operator|(PipeLine& pl, from_to_fd_ref&& ft) {
+  pl.commands.back().push_setter(new fd_pipe_redirection_setter(std::move(ft), fd_pipe_redirection_setter::READ));
   pl.auto_wait = false;
   return pl;
 }
 
-PipeLine& operator|(int& fd, PipeLine& pl){
-  pl.commands.front().push_setter(new fd_pipe_redirection_setter(0, fd, fd_pipe_redirection_setter::WRITE));
+PipeLine& operator|(from_to_fd_ref&& ft, PipeLine& pl){
+  pl.commands.front().push_setter(new fd_pipe_redirection_setter(std::move(ft), fd_pipe_redirection_setter::WRITE));
   pl.auto_wait = false;
   return pl;
 }
 
-PipeLine& operator|(PipeLine& pl, FILE*& f) {
-  pl.commands.back().push_setter(new stdio_pipe_redirection_setter(1, f, fd_pipe_redirection_setter::READ));
+PipeLine& operator|(PipeLine& pl, from_to_stdio_ref&& ft) {
+  pl.commands.back().push_setter(new stdio_pipe_redirection_setter(std::move(ft), fd_pipe_redirection_setter::READ));
   pl.auto_wait = false;
   return pl;
 }
 
-PipeLine& operator|(FILE*& f, PipeLine& pl) {
-  pl.commands.front().push_setter(new stdio_pipe_redirection_setter(0, f, fd_pipe_redirection_setter::WRITE));
+PipeLine& operator|(from_to_stdio_ref&& ft, PipeLine& pl) {
+  pl.commands.front().push_setter(new stdio_pipe_redirection_setter(std::move(ft), fd_pipe_redirection_setter::WRITE));
   pl.auto_wait = false;
   return pl;
 }
 
-PipeLine& operator|(PipeLine& pl, istream& is) {
-  pl.commands.back().push_setter(new stream_pipe_redirection_setter<istream>(1, is));
+PipeLine& operator|(PipeLine& pl, from_to_stream_ref<istream>&& ft) {
+  pl.commands.back().push_setter(new stream_pipe_redirection_setter<istream>(std::move(ft)));
   pl.auto_wait = false;
   return pl;
 }
