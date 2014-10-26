@@ -249,6 +249,7 @@ TEST_F(CmdRedirection, OutPipe1) {
   EXPECT_STREQ("youpie\n", buf);
   ASSERT_EQ(-1, getline(&buf, &n, out));
   free(buf);
+  fclose(out);
 
   e.wait();
   ASSERT_TRUE(e.success());
@@ -265,6 +266,7 @@ TEST_F(CmdRedirection, OutPipe2) {
   EXPECT_STREQ("voici\n", buf);
   ASSERT_EQ(-1, getline(&buf, &n, fout));
   free(buf);
+  fclose(fout);
 
   e.wait();
   ASSERT_TRUE(e.success());
