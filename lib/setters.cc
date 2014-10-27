@@ -4,40 +4,10 @@
 
 #include <ext/stdio_filebuf.h>
 
+#include <noshell/utils.hpp>
 #include <noshell/setters.hpp>
 
 namespace noshell {
-struct save_restore_errno {
-  const int save_errno;
-  save_restore_errno() : save_errno(errno) { }
-  ~save_restore_errno() { errno = save_errno; }
-};
-
-bool safe_close(int& fd) {
-  if(fd == -1) return true;
-  while(close(fd) == -1) {
-    if(errno == EINTR) continue;
-    return false;
-  }
-  fd = -1;
-  return true;
-}
-
-bool safe_dup2_no_close(int to, int from) {
-  if(to == -1) return true;
-  int res;
-  while((res = dup2(to, from) == -1)) {
-    if(errno == EINTR || errno == EBUSY) continue;
-    return false;
-  }
-  return true;
-}
-
-bool safe_dup2(int& to, int from) {
-  if(safe_dup2_no_close(to, from))
-    return safe_close(to);
-  return false;
-}
 
 bool fd_redirection::child_setup() {
   bool success   = true;
@@ -87,7 +57,6 @@ process_setup* path_redirection_setter::make_setup(std::string& err) {
       err = "Failed to open the file '" + ft.to + "' for reading";
       return nullptr;
     }
-    printf("path redirection %d %d\n", (int)ft.from[0], to);
     return new path_redirection(ft.from, to);
   } else {
     int flags = O_WRONLY|O_CREAT;

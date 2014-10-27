@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <string.h>
 
+#include <noshell/utils.hpp>
 #include <noshell/noshell.hpp>
 
 namespace noshell {
@@ -46,12 +47,6 @@ bool setup_exec_child(std::forward_list<std::unique_ptr<process_setup> >& setups
   return false;
 }
 
-struct auto_close {
-  int fd;
-  auto_close(int i) : fd(i) { }
-  ~auto_close() { close(fd); }
-};
-
 Handle Command::run(process_setup* last_setup) {
   Handle ret;
 
@@ -74,7 +69,7 @@ Handle Command::run(process_setup* last_setup) {
   case -1: return ret.return_errno();
 
   case 0:
-    close(pipe_fds[0]);
+    safe_close(pipe_fds[0]);
     setup_exec_child(ret.setups, cmd);
     send_errno_to_pipe(pipe_fds[1]);
     exit(0);
@@ -83,7 +78,7 @@ Handle Command::run(process_setup* last_setup) {
   }
 
   // Parent setup and wait for child exec
-  close(pipe_fds[1]);
+  safe_close(pipe_fds[1]);
   auto_close close_pipe0(pipe_fds[0]);
 
   for(auto& it : ret.setups) {

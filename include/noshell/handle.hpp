@@ -29,6 +29,8 @@ struct Errno {
 
 class Command;
 struct Handle {
+  typedef std::forward_list<std::unique_ptr<process_setup> > setup_list_type;
+
   enum error_types { NO_ERROR, SETUP_ERROR, STATUS };
   pid_t       pid;
   error_types error;
@@ -36,8 +38,8 @@ struct Handle {
     Status    status;
     Errno     err;
   } data;
-  std::forward_list<std::unique_ptr<process_setup> > setups;
-  std::string message;
+  setup_list_type setups;       // setup hooks
+  std::string     message;      // error message
 
   Handle() : pid(-1), error(NO_ERROR) { }
   Handle(Handle&& rhs) noexcept
