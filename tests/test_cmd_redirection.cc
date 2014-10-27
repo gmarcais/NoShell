@@ -223,6 +223,9 @@ TEST_F(CmdRedirection, OutErr2) {
 TEST_F(CmdRedirection, Path3) {
   NS::istream is;
   NS::Exit e = "cat"_C("/dev/fd/3") < 3_R("text_file.txt") | is;
+  //  NS::Exit e = "ls"_C("-l", "/proc/self/fd") < 3_R("text_file.txt");
+
+  EXPECT_FALSE(e[0].setup_error());
 
   std::string line;
   EXPECT_TRUE(std::getline(is, line));

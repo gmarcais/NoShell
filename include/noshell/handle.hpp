@@ -37,13 +37,21 @@ struct Handle {
     Errno     err;
   } data;
   std::forward_list<std::unique_ptr<process_setup> > setups;
+  std::string message;
 
   Handle() : pid(-1), error(NO_ERROR) { }
-  Handle(Handle&& rhs) noexcept : pid(rhs.pid), error(rhs.error), data(rhs.data), setups(std::move(rhs.setups)) { }
+  Handle(Handle&& rhs) noexcept
+    : pid(rhs.pid)
+    , error(rhs.error)
+    , data(rhs.data)
+    , setups(std::move(rhs.setups))
+    , message(std::move(rhs.message))
+  { }
   Handle(Command&& rhs);
 
   bool setup_error() const { return error == SETUP_ERROR; }
   const Errno& err() const { return data.err; }
+  std::string what() const { return message + ": " + data.err.what(); }
   bool have_status() const { return error == STATUS; }
   const Status& status() const { return data.status; }
   bool success() const { return !setup_error() && have_status() && status().exited() && status().exit_status() == 0; }

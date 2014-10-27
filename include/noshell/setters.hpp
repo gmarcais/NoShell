@@ -48,14 +48,14 @@ struct from_to_path {
 
 struct process_setup {
   virtual ~process_setup() { }
-  virtual bool parent_setup() { return true; }
+  virtual bool parent_setup(std::string& err) { return true; }
   virtual bool child_setup() { return true; }
   virtual bool parent_cleanup() { return true; }
 };
 
 struct process_setter {
   virtual ~process_setter() { }
-  virtual process_setup* make_setup() = 0;
+  virtual process_setup* make_setup(std::string& err) = 0;
 };
 
 // Setup redirection to an already open file descriptor
@@ -72,7 +72,7 @@ struct fd_redirection_setter : public process_setter {
   fd_redirection_setter(int f, int t) : ft(f, t) { }
   fd_redirection_setter(fd_list_type&& f, int t) : ft(std::move(f), t) { }
   fd_redirection_setter(from_to_fd&& f) : ft(std::move(f)) { }
-  virtual process_setup* make_setup() { return new fd_redirection(ft); }
+  virtual process_setup* make_setup(std::string& err) { return new fd_redirection(ft); }
 };
 
 // Setup a redirection to a named file, either in input or output.
@@ -80,7 +80,7 @@ struct path_redirection : public fd_redirection {
   path_redirection(int f, int t) : fd_redirection(f, t) { }
   path_redirection(const fd_list_type& f, int t) : fd_redirection(f, t) { }
   virtual ~path_redirection();
-  virtual bool parent_setup();
+  virtual bool parent_setup(std::string& err);
 };
 
 struct path_redirection_setter : public process_setter {
@@ -92,7 +92,7 @@ struct path_redirection_setter : public process_setter {
   path_redirection_setter(from_to_path&& f, path_type t = READ) : ft(std::move(f)), type(t) { }
   //  path_redirection_setter(int f, const std::string& p, path_type t = READ) : from(f), path(p), type(t) { }
   ~path_redirection_setter() { }
-  virtual process_setup* make_setup();
+  virtual process_setup* make_setup(std::string& err);
 };
 
 // Setups pipes on the stdin and stdout of process to create pipeline.
@@ -105,7 +105,7 @@ struct pipeline_redirection : public process_setup {
   }
   virtual ~pipeline_redirection();
   virtual bool child_setup();
-  virtual bool parent_setup();
+  virtual bool parent_setup(std::string& err);
 };
 
 // Setups a pipe from an output of the child process to a file
@@ -119,7 +119,7 @@ struct fd_pipe_redirection : public process_setup {
   fd_pipe_redirection(const fd_list_type f, int d, int c) : from(f), pipe_dup(d), pipe_close(c) { }
   virtual ~fd_pipe_redirection();
   virtual bool child_setup();
-  virtual bool parent_setup();
+  virtual bool parent_setup(std::string& err);
 };
 
 struct fd_pipe_redirection_setter : public process_setter {
@@ -129,7 +129,7 @@ struct fd_pipe_redirection_setter : public process_setter {
   fd_pipe_redirection_setter(int f, int& t, pipe_type p) : ft(f, t), type(p) { }
   fd_pipe_redirection_setter(const fd_list_type& f, int& t, pipe_type p) : ft(std::move(f), t), type(p) { }
   fd_pipe_redirection_setter(from_to_ref<int>&& r, pipe_type p) : ft(std::move(r)), type(p) { }
-  virtual process_setup* make_setup();
+  virtual process_setup* make_setup(std::string& err);
 };
 
 // Same as above but with a stdio FILE*.
@@ -146,7 +146,7 @@ struct stdio_pipe_redirection_setter : public fd_pipe_redirection_setter {
     , fd(-1)
     , file(ft.to)
   { }
-  virtual process_setup* make_setup();
+  virtual process_setup* make_setup(std::string& err);
 };
 
 // Same as above but with a C++ stream
@@ -199,8 +199,8 @@ struct stream_pipe_redirection_setter : public fd_pipe_redirection_setter {
     , fd(-1)
     , stream(ft.to)
   { }
-  virtual process_setup* make_setup() {
-    process_setup* setup = fd_pipe_redirection_setter::make_setup();
+  virtual process_setup* make_setup(std::string& err) {
+    process_setup* setup = fd_pipe_redirection_setter::make_setup(err);
     if(!setup) return nullptr;
     stream.open(fd, stream_traits<ST>::mode);
     return setup;

@@ -60,7 +60,7 @@ Handle Command::run(process_setup* last_setup) {
   if(last_setup)
     ret.setups.push_front(std::unique_ptr<process_setup>(last_setup));
   for(auto& it : setters) {
-    process_setup* new_setup = it->make_setup();
+    process_setup* new_setup = it->make_setup(ret.message);
     if(!new_setup) return ret.return_errno();
     ret.setups.push_front(std::unique_ptr<process_setup>(new_setup));
   }
@@ -87,11 +87,12 @@ Handle Command::run(process_setup* last_setup) {
   auto_close close_pipe0(pipe_fds[0]);
 
   for(auto& it : ret.setups) {
-    if(!it->parent_setup())
+    if(!it->parent_setup(ret.message))
       return ret.return_errno();
   }
 
   int recv_errno;
+  int status;
   while(true) {
     ssize_t bytes = read(pipe_fds[0], &recv_errno, sizeof(recv_errno));
     switch(bytes) {
@@ -101,7 +102,10 @@ Handle Command::run(process_setup* last_setup) {
 
     case 0: return ret;
 
-    default: return ret.return_errno(recv_errno);
+    default:
+      ret.message = "Child process setup error";
+      waitpid(ret.pid, &status, 0);
+      return ret.return_errno(recv_errno);
     }
   }
 }
@@ -127,10 +131,12 @@ void Handle::wait() {
     res = waitpid(pid, &status, 0);
     if(res != -1 || errno != EINTR) break;
   }
-  if(res == -1)
+  if(res == -1) {
+    message = "Waiting failed for child '" + std::to_string(pid) + "'";
     set_errno();
-  else
+  } else {
     set_status(status);
+  }
 }
 
 Exit::Exit(PipeLine&& rhs) : Exit(rhs.run_wait_auto()) { }
