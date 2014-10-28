@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <cstdlib>
 
 #include <noshell/utils.hpp>
 #include <noshell/noshell.hpp>
@@ -33,7 +34,10 @@ void send_errno_to_pipe(int fd) {
   }
 }
 
-bool setup_exec_child(std::forward_list<std::unique_ptr<process_setup> >& setups, const std::vector<std::string>& cmd) {
+bool setup_exec_child(const std::set<int>& redirected, setup_list_type& setups, const std::vector<std::string>& cmd) {
+  for(auto& it : setups)
+    if(!it->fix_collisions(redirected))
+      return false;
   for(auto& it : setups) {
     if(!it->child_setup())
       return false;
@@ -55,7 +59,7 @@ Handle Command::run(process_setup* last_setup) {
   if(last_setup)
     ret.setups.push_front(std::unique_ptr<process_setup>(last_setup));
   for(auto& it : setters) {
-    process_setup* new_setup = it->make_setup(ret.message);
+    process_setup* new_setup = it->make_setup(ret.message, redirected);
     if(!new_setup) return ret.return_errno();
     ret.setups.push_front(std::unique_ptr<process_setup>(new_setup));
   }
@@ -70,7 +74,7 @@ Handle Command::run(process_setup* last_setup) {
 
   case 0:
     safe_close(pipe_fds[0]);
-    setup_exec_child(ret.setups, cmd);
+    setup_exec_child(redirected, ret.setups, cmd);
     send_errno_to_pipe(pipe_fds[1]);
     exit(0);
 

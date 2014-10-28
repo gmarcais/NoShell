@@ -2,6 +2,7 @@
 #define __NOSHELL_SETTERS_H__
 
 #include <vector>
+#include <set>
 
 #include <ext/stdio_filebuf.h>
 
@@ -14,6 +15,11 @@ struct fd_type {
   fd_type(FILE* x) : fd(fileno(x)) { }
   operator int() const { return fd; }
   operator int&() { return fd; }
+
+  // Move the open file to another spot. I.e. it is duped, then fd is
+  // changed to the new file descriptor, preserving it CLOEXEC flag,
+  // and the old one is closed.
+  bool move(int above = 0);
 };
 typedef std::vector<fd_type> fd_list_type;
 
@@ -46,16 +52,20 @@ struct from_to_path {
   from_to_path(int f, const char* p) : from(1, f), to(p) { }
 };
 
+bool fix_collision(int& fd, const std::set<int>& redirected);
+//bool sanitize(fd_list_type& fds, std::set<int> redirected);
+
 struct process_setup {
   virtual ~process_setup() { }
-  virtual bool parent_setup(std::string& err) { return true; }
-  virtual bool child_setup() { return true; }
-  virtual bool parent_cleanup() { return true; }
+  virtual bool parent_setup(std::string& err) { return true; } // Setup after fork in parent
+  virtual bool fix_collisions(const std::set<int>& redirected) { return true; } // Ensure no collision to redirected file descriptors
+  virtual bool child_setup() { return true; } // Setup after fork in child
+  virtual bool parent_cleanup() { return true; } // Clean up in parent
 };
 
 struct process_setter {
   virtual ~process_setter() { }
-  virtual process_setup* make_setup(std::string& err) = 0;
+  virtual process_setup* make_setup(std::string& err, std::set<int>& rfds) = 0;
 };
 
 // Setup redirection to an already open file descriptor
@@ -65,6 +75,7 @@ struct fd_redirection : public process_setup {
   fd_redirection(const fd_list_type& f, int t) : ft(f, t) { }
   fd_redirection(const from_to_fd& f) : ft(f) { }
   virtual bool child_setup();
+  virtual bool fix_collisions(const std::set<int>& r) { return fix_collision(ft.to, r); }
 };
 
 struct fd_redirection_setter : public process_setter {
@@ -72,7 +83,7 @@ struct fd_redirection_setter : public process_setter {
   fd_redirection_setter(int f, int t) : ft(f, t) { }
   fd_redirection_setter(fd_list_type&& f, int t) : ft(std::move(f), t) { }
   fd_redirection_setter(from_to_fd&& f) : ft(std::move(f)) { }
-  virtual process_setup* make_setup(std::string& err) { return new fd_redirection(ft); }
+  virtual process_setup* make_setup(std::string& err, std::set<int>& rfds);
 };
 
 // Setup a redirection to a named file, either in input or output.
@@ -92,7 +103,7 @@ struct path_redirection_setter : public process_setter {
   path_redirection_setter(from_to_path&& f, path_type t = READ) : ft(std::move(f)), type(t) { }
   //  path_redirection_setter(int f, const std::string& p, path_type t = READ) : from(f), path(p), type(t) { }
   ~path_redirection_setter() { }
-  virtual process_setup* make_setup(std::string& err);
+  virtual process_setup* make_setup(std::string& err, std::set<int>& rfds);
 };
 
 // Setups pipes on the stdin and stdout of process to create pipeline.
@@ -106,6 +117,9 @@ struct pipeline_redirection : public process_setup {
   virtual ~pipeline_redirection();
   virtual bool child_setup();
   virtual bool parent_setup(std::string& err);
+  virtual bool fix_collisions(const std::set<int>& r) {
+    return fix_collision(pipe0[0], r) && fix_collision(pipe0[1], r) && fix_collision(pipe1[0], r) && fix_collision(pipe1[1], r);
+  }
 };
 
 // Setups a pipe from an output of the child process to a file
@@ -113,13 +127,14 @@ struct pipeline_redirection : public process_setup {
 // descriptor of the parent process to the input of the child).
 struct fd_pipe_redirection : public process_setup {
   fd_list_type from;
-  int              pipe_dup;
-  int              pipe_close;
+  int          pipe_dup;
+  int          pipe_close;
   fd_pipe_redirection(int f, int d, int c) : from(1, f), pipe_dup(d), pipe_close(c) { }
   fd_pipe_redirection(const fd_list_type f, int d, int c) : from(f), pipe_dup(d), pipe_close(c) { }
   virtual ~fd_pipe_redirection();
   virtual bool child_setup();
   virtual bool parent_setup(std::string& err);
+  virtual bool fix_collisions(const std::set<int>& r) { return fix_collision(pipe_dup, r) && fix_collision(pipe_close, r); }
 };
 
 struct fd_pipe_redirection_setter : public process_setter {
@@ -129,7 +144,7 @@ struct fd_pipe_redirection_setter : public process_setter {
   fd_pipe_redirection_setter(int f, int& t, pipe_type p) : ft(f, t), type(p) { }
   fd_pipe_redirection_setter(const fd_list_type& f, int& t, pipe_type p) : ft(std::move(f), t), type(p) { }
   fd_pipe_redirection_setter(from_to_ref<int>&& r, pipe_type p) : ft(std::move(r)), type(p) { }
-  virtual process_setup* make_setup(std::string& err);
+  virtual process_setup* make_setup(std::string& err, std::set<int>& rfds);
 };
 
 // Same as above but with a stdio FILE*.
@@ -146,7 +161,7 @@ struct stdio_pipe_redirection_setter : public fd_pipe_redirection_setter {
     , fd(-1)
     , file(ft.to)
   { }
-  virtual process_setup* make_setup(std::string& err);
+  virtual process_setup* make_setup(std::string& err, std::set<int>& rfds);
 };
 
 // Same as above but with a C++ stream
@@ -199,8 +214,8 @@ struct stream_pipe_redirection_setter : public fd_pipe_redirection_setter {
     , fd(-1)
     , stream(ft.to)
   { }
-  virtual process_setup* make_setup(std::string& err) {
-    process_setup* setup = fd_pipe_redirection_setter::make_setup(err);
+  virtual process_setup* make_setup(std::string& err, std::set<int>& rfds) {
+    process_setup* setup = fd_pipe_redirection_setter::make_setup(err, rfds);
     if(!setup) return nullptr;
     stream.open(fd, stream_traits<ST>::mode);
     return setup;

@@ -8,23 +8,38 @@
 #include <noshell/setters.hpp>
 
 namespace noshell {
+bool move_fd(int& fd, int above) {
+  const int flags = fcntl(fd, F_GETFD);
+  if(flags == -1) return false;
+  int new_fd;
+  if(!safe_dup(fd, new_fd, (flags & FD_CLOEXEC) != 0, above)) return false;
+  safe_close(fd);
+  fd = new_fd;
+  return true;
+}
+
+bool fd_type::move(int above) { return move_fd(fd, above); }
+
+bool fix_collision(int& fd, const std::set<int>& r) {
+  if(r.empty()) return true;
+  if(r.find(fd) == r.cend()) return true;
+  return move_fd(fd, *--r.cend() + 1);
+}
+
+process_setup* fd_redirection_setter::make_setup(std::string& err, std::set<int>& rfds) {
+  for(auto it : ft.from)
+    rfds.insert(it);
+  return new fd_redirection(ft);
+}
 
 bool fd_redirection::child_setup() {
   bool success   = true;
-  bool collision = false;
 
-  for(auto it : ft.from) {
-    if(ft.to != it) {
-      if(!safe_dup2_no_close(ft.to, it))
-        success = false;
-    } else {
-      collision = true;
-    }
-  }
-
-  if(!collision)
-    if(!safe_close(ft.to))
+  for(auto it : ft.from)
+    if(!safe_dup2_no_close(ft.to, it))
       success = false;
+  if(!safe_close(ft.to))
+    success = false;
 
   return success;
 }
@@ -48,7 +63,9 @@ bool pipeline_redirection::parent_setup(std::string& err) {
   return true;
 }
 
-process_setup* path_redirection_setter::make_setup(std::string& err) {
+process_setup* path_redirection_setter::make_setup(std::string& err, std::set<int>& rfds) {
+  for(auto it : ft.from)
+    rfds.insert(it);
   if(type == READ) {
     int flags = O_RDONLY;
     int to = open(ft.to.c_str(), flags);
@@ -78,7 +95,9 @@ process_setup* path_redirection_setter::make_setup(std::string& err) {
 bool path_redirection::parent_setup(std::string& err) { safe_close(ft.to); return true; }
 path_redirection::~path_redirection() { safe_close(ft.to); }
 
-process_setup* fd_pipe_redirection_setter::make_setup(std::string& err) {
+process_setup* fd_pipe_redirection_setter::make_setup(std::string& err, std::set<int>& rfds) {
+  for(auto it : ft.from)
+    rfds.insert(it);
   int fds[2];
   if(pipe(fds) == -1) {
     save_restore_errno sre;
@@ -103,8 +122,8 @@ bool fd_pipe_redirection::child_setup() {
 bool fd_pipe_redirection::parent_setup(std::string& err) { safe_close(pipe_dup); return true; }
 fd_pipe_redirection::~fd_pipe_redirection() { safe_close(pipe_dup); }
 
-process_setup* stdio_pipe_redirection_setter::make_setup(std::string& err) {
-  process_setup* setup = fd_pipe_redirection_setter::make_setup(err);
+process_setup* stdio_pipe_redirection_setter::make_setup(std::string& err, std::set<int>& rfds) {
+  process_setup* setup = fd_pipe_redirection_setter::make_setup(err, rfds);
   if(!setup) return nullptr;
   file = fdopen(fd, fd_pipe_redirection_setter::type == READ ? "r" : "w");
   if(!file) {

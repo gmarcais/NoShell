@@ -7,20 +7,28 @@
 #include <string>
 #include <vector>
 #include <forward_list>
+#include <set>
 #include <initializer_list>
 
 #include <noshell/setters.hpp>
 #include <noshell/handle.hpp>
 
 namespace noshell {
+typedef std::forward_list<std::unique_ptr<process_setter> > setter_list_type;
 class Command {
   std::vector<std::string> cmd;
-  std::forward_list<std::unique_ptr<process_setter> > setters;
+  setter_list_type         setters;
+public:
+  std::set<int>            redirected; // Set of redirected file descriptors
 
 public:
   Command(Command& rhs) = delete;
   Command(const Command& rhs) = delete;
-  Command(Command&& rhs) noexcept : cmd(std::move(rhs.cmd)), setters(std::move(rhs.setters)) { }
+  Command(Command&& rhs) noexcept
+    : cmd(std::move(rhs.cmd))
+    , setters(std::move(rhs.setters))
+    , redirected(std::move(rhs.redirected))
+  { }
   explicit Command(std::vector<std::string>&& c) : cmd(std::move(c)) { }
   template<typename Iterator>
   Command(Iterator begin, Iterator end) : cmd(begin, end) { }

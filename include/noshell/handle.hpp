@@ -28,8 +28,8 @@ struct Errno {
 };
 
 class Command;
+typedef std::forward_list<std::unique_ptr<process_setup> > setup_list_type;
 struct Handle {
-  typedef std::forward_list<std::unique_ptr<process_setup> > setup_list_type;
 
   enum error_types { NO_ERROR, SETUP_ERROR, STATUS };
   pid_t       pid;
