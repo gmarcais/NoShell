@@ -69,6 +69,32 @@ struct Handle {
 };
 
 class PipeLine;
+class Failures {
+  const std::vector<Handle>& handles;
+
+  class iterator : public std::iterator<std::forward_iterator_tag, Handle> {
+    typedef std::vector<Handle>::const_iterator handle_iterator;
+    handle_iterator            it;
+    const std::vector<Handle>& handles;
+  public:
+    iterator(const std::vector<Handle>& h) : it(h.cbegin()), handles(h) { }
+    iterator(const std::vector<Handle>& h, handle_iterator i) : it(i), handles(h) { }
+    //    iterator(const handle_iterator i) : it(i) { }
+    iterator(const iterator& rhs) : it(rhs.it), handles(rhs.handles) { }
+    iterator& operator++() { for(++it; it != handles.cend() && it->success(); ++it) { } return *this; }
+    iterator operator++(int) { iterator cit(*this); operator++(); return cit; }
+    bool operator==(const iterator& rhs) { return it == rhs.it; }
+    bool operator!=(const iterator& rhs) { return it != rhs.it; }
+    const Handle& operator*() const { return *it; }
+    const Handle* operator->() const { return &*it; }
+    ssize_t id() const { return it - handles.cbegin(); }
+  };
+
+public:
+  Failures(const std::vector<Handle>& h) : handles(h) { }
+  iterator begin() { return iterator(handles); }
+  iterator end() { return iterator(handles, handles.cend()); }
+};
 // Return status of a pipeline
 class Exit {
   std::vector<Handle> handles;
@@ -80,6 +106,7 @@ public:
   bool success() const {
     return std::all_of(handles.begin(), handles.end(), [](const Handle& h) { return h.success(); });
   }
+  Failures failures() const { return Failures(handles); }
   const Handle& operator[](int i) { return handles[i]; }
 
   void push_handle(Handle&& h) { handles.push_back(std::move(h)); }
