@@ -34,10 +34,8 @@ int main(int argc, char *argv[]) {
   while(true) {
     dirent* entry = readdir(fds);
     if(!entry) {
-      if(errno) {
-        perror("readdir");
-        return 1;
-      }
+      if(errno)
+        throw std::system_error(errno, std::system_category(), "readdir");
       break;
     }
     if(entry->d_name[0] == '.') continue;

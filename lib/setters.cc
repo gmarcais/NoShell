@@ -67,7 +67,7 @@ process_setup* path_redirection_setter::make_setup(std::string& err, std::set<in
   for(auto it : ft.from)
     rfds.insert(it);
   if(type == READ) {
-    int flags = O_RDONLY;
+    int flags = O_RDONLY | O_CLOEXEC;
     int to = open(ft.to.c_str(), flags);
     if(to == -1) {
       save_restore_errno sre;
@@ -76,7 +76,7 @@ process_setup* path_redirection_setter::make_setup(std::string& err, std::set<in
     }
     return new path_redirection(ft.from, to);
   } else {
-    int flags = O_WRONLY|O_CREAT;
+    int flags = O_WRONLY|O_CREAT|O_CLOEXEC;
     if(type == APPEND)
       flags |= O_APPEND;
     else
@@ -99,7 +99,7 @@ process_setup* fd_pipe_redirection_setter::make_setup(std::string& err, std::set
   for(auto it : ft.from)
     rfds.insert(it);
   int fds[2];
-  if(pipe(fds) == -1) {
+  if(pipe2(fds, O_CLOEXEC) == -1) {
     save_restore_errno sre;
     err = "Failed to create pipes for pipe redirection";
     return nullptr;

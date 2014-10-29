@@ -149,7 +149,7 @@ Exit PipeLine::run() {
   int pfds[2] = { -1, -1 };
   for(++it; it != commands.end(); pit = it, ++it) {
     int fds[2];
-    if(pipe(fds) == -1) exit(1); // TODO: handle error
+    if(pipe2(fds, O_CLOEXEC) == -1) exit(1); // TODO: handle error
     ret.push_handle(pit->run(new pipeline_redirection(pfds, fds)));
     std::copy(fds, fds + 2, pfds);
   }

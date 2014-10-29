@@ -7,7 +7,7 @@ CXXFLAGS += -I$(TUP_CWD) -I$(PROJECT_ROOT)/include
 
 
 # Compile Google test library and things common to tests
-: foreach gtest/src/gtest_main.cc gtest/src/gtest-all.cc |> !cxx |> {gtest}
+: foreach gtest/src/gtest_main.cc gtest/src/gtest-all.cc test_misc.cc |> !cxx |> {gtest}
 : {gtest} |> !ar |> libgtest_main.a
 CLIBS = libgtest_main.a $(PROJECT_ROOT)/lib/libnoshell.a
 

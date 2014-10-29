@@ -13,49 +13,10 @@
 
 #include <gtest/gtest.h>
 #include <noshell/noshell.hpp>
+#include "test_misc.hpp"
 
 namespace {
 namespace NS = noshell;
-struct auto_close {
-  DIR* dirp;
-  auto_close(DIR* p) : dirp(p) { }
-  ~auto_close() { closedir(dirp); }
-};
-
-std::vector<int> open_fds() {
-  static const int flags = O_RDONLY
-#ifdef O_DIRECTORY
-    |O_DIRECTORY
-#endif
-    ;
-
-  std::vector<int> ret;
-
-  int self_fd = open("/proc/self/fd", flags);
-  if(self_fd == -1)
-    throw std::system_error(errno, std::system_category(), "open");
-  DIR* fds = fdopendir(self_fd);
-  if(!fds) {
-    close(self_fd);
-    throw std::system_error(errno, std::system_category(), "fdopendir");
-  }
-  auto_close close_fds(fds);
-
-  dirent* entry;
-  for(errno = 0 ; (entry = readdir(fds)); errno = 0) {
-    if(entry->d_name[0] == '.') continue;
-    std::string s(entry->d_name);
-    if(!std::all_of(s.cbegin(), s.cend(), [](const char c) { return isdigit(c); }))
-      throw std::runtime_error("Invalid entry in fd directory" + s);
-    int fd = atoi(entry->d_name);
-    if(fd != self_fd)
-      ret.push_back(fd);
-  }
-  if(errno) throw std::system_error(errno, std::system_category(), "readdir");
-
-  return ret;
-}
-
 class ExtraFds : public ::testing::Test {
 protected:
   virtual void SetUp() {
@@ -70,7 +31,7 @@ protected:
 // Check that no extra file descriptor is passed to the child and that
 // none are left in the parent.
 TEST_F(ExtraFds, Redirection) {
-  auto fds = open_fds();
+  const auto fds = open_fds();
 
   std::vector<std::string> cmd;
   cmd.push_back("./check_open_fd");

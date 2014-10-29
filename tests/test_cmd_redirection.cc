@@ -7,6 +7,7 @@
 #include <string>
 #include <gtest/gtest.h>
 #include <noshell/noshell.hpp>
+#include "test_misc.hpp"
 
 namespace {
 namespace NS = noshell;
@@ -24,6 +25,8 @@ protected:
 };
 
 TEST_F(CmdRedirection, OutputFD) {
+  check_fixed_fds check_fds;
+
   int fd = open(getenv("TEST_TMP"), O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
   ASSERT_NE(-1, fd);
   NS::Exit e = NS::C("./puts_to", 1, "coucou") > fd;
@@ -38,6 +41,8 @@ TEST_F(CmdRedirection, OutputFD) {
 }
 
 TEST_F(CmdRedirection, OutputBadFile) {
+  check_fixed_fds check_fds;
+
   NS::Exit e = NS::C("./puts_to", "1", "coucou") > "/cantwritethere";
 
   EXPECT_FALSE(e.success());
@@ -45,6 +50,8 @@ TEST_F(CmdRedirection, OutputBadFile) {
 }
 
 TEST_F(CmdRedirection, OutputTmpFile) {
+  check_fixed_fds check_fds;
+
   NS::Exit e = NS::C("./puts_to", 1, "coucou") > getenv("TEST_TMP");
 
   EXPECT_TRUE(e.success());
@@ -56,6 +63,8 @@ TEST_F(CmdRedirection, OutputTmpFile) {
 }
 
 TEST_F(CmdRedirection, AppendTmpFile) {
+  check_fixed_fds check_fds;
+
   {
     NS::Exit e = NS::C("./puts_to", "1", "coucou", "hi") > getenv("TEST_TMP");
     EXPECT_TRUE(e.success());
@@ -80,6 +89,8 @@ TEST_F(CmdRedirection, AppendTmpFile) {
 }
 
 TEST_F(CmdRedirection, InputFD) {
+  check_fixed_fds check_fds;
+
   int fd = open("text_file.txt", O_RDONLY);
   ASSERT_NE(-1, fd);
   NS::Exit e = NS::C("cat") > getenv("TEST_TMP") < fd;
@@ -100,6 +111,8 @@ TEST_F(CmdRedirection, InputFD) {
 }
 
 TEST_F(CmdRedirection, InputFile) {
+  check_fixed_fds check_fds;
+
   NS::Exit e = NS::C("cat") > getenv("TEST_TMP") < "text_file.txt";
 
   EXPECT_TRUE(e.success());
@@ -117,6 +130,8 @@ TEST_F(CmdRedirection, InputFile) {
 }
 
 TEST_F(CmdRedirection, OutputPipe) {
+  check_fixed_fds check_fds;
+
   FILE* f = nullptr;
   NS::Exit e = NS::C("./puts_to", "1", "coucou", "hello") | f;
   ASSERT_FALSE(e[0].setup_error());
@@ -136,6 +151,8 @@ TEST_F(CmdRedirection, OutputPipe) {
 }
 
 TEST_F(CmdRedirection, InputPipe) {
+  check_fixed_fds check_fds;
+
   FILE* f = nullptr;
   NS::Exit e = f | NS::C("cat") > getenv("TEST_TMP");
 
@@ -159,6 +176,8 @@ TEST_F(CmdRedirection, InputPipe) {
 }
 
 TEST_F(CmdRedirection, OutputStream) {
+  check_fixed_fds check_fds;
+
   NS::istream is;
   NS::Exit e = NS::C("./puts_to", 1, "coucou", "hello") | is;
   ASSERT_FALSE(e[0].setup_error());
@@ -177,6 +196,8 @@ TEST_F(CmdRedirection, OutputStream) {
 }
 
 TEST_F(CmdRedirection, InputStream) {
+  check_fixed_fds check_fds;
+
   NS::ostream os;
   NS::Exit e = os | NS::C("cat") > getenv("TEST_TMP");
 
@@ -199,6 +220,8 @@ TEST_F(CmdRedirection, InputStream) {
 }
 
 TEST_F(CmdRedirection, OutErr1) {
+  check_fixed_fds check_fds;
+
   NS::Exit e = "./puts_to"_C(1, "bah") > NS::R(2, 1).to(getenv("TEST_TMP"));
 
   ASSERT_TRUE(e.success());
@@ -210,6 +233,8 @@ TEST_F(CmdRedirection, OutErr1) {
 } // CmdRedirection.OutErr1
 
 TEST_F(CmdRedirection, OutErr2) {
+  check_fixed_fds check_fds;
+
   NS::Exit e = "./puts_to"_C(2, "bou") > NS::R(2, 1).to(getenv("TEST_TMP"));
 
   ASSERT_TRUE(e.success());
@@ -221,6 +246,8 @@ TEST_F(CmdRedirection, OutErr2) {
 } // CmdRedirection.OutErr2
 
 TEST_F(CmdRedirection, Path3) {
+  check_fixed_fds check_fds;
+
   NS::istream is;
   NS::Exit e = "cat"_C("/dev/fd/3") < 3_R("text_file.txt") | is;
   //  NS::Exit e = "ls"_C("-l", "/proc/self/fd") < 3_R("text_file.txt");
@@ -243,6 +270,8 @@ TEST_F(CmdRedirection, Path3) {
 } // CmdRedirection.Path3
 
 TEST_F(CmdRedirection, OutPipe1) {
+  check_fixed_fds check_fds;
+
   FILE* out;
   NS::Exit e = "./puts_to"_C(1, "youpie") | NS::R(2, 1).to(out);
 
@@ -259,6 +288,8 @@ TEST_F(CmdRedirection, OutPipe1) {
 } // CmdRedirection.OutPipe1
 
 TEST_F(CmdRedirection, OutPipe2) {
+  check_fixed_fds check_fds;
+
   int out;
   NS::Exit e = "./puts_to"_C(2, "voici") | NS::R(2, 1).to(out);
 
@@ -276,6 +307,8 @@ TEST_F(CmdRedirection, OutPipe2) {
 } // CmdRedirection.OutPipe2
 
 TEST_F(CmdRedirection, OutStream1) {
+  check_fixed_fds check_fds;
+
   NS::istream is;
   NS::Exit e = "./puts_to"_C(1, "yougadie") | NS::R(1, 2).to(is);
   ASSERT_NE(-1, is.fd());
@@ -290,6 +323,8 @@ TEST_F(CmdRedirection, OutStream1) {
 } // CmdRedirection.OutPipe1
 
 TEST_F(CmdRedirection, OutStream2) {
+  check_fixed_fds check_fds;
+
   NS::istream is;
   NS::Exit e = "./puts_to"_C(2, "pouf pouf") | NS::R(1, 2).to(is);
   ASSERT_NE(-1, is.fd());

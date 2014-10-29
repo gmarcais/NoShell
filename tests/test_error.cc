@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <noshell/noshell.hpp>
+#include "test_misc.hpp"
 
 
 namespace {
@@ -7,6 +8,8 @@ namespace NS = noshell;
 using namespace NS::literal;
 
 TEST(Error, ReadFile) {
+  check_fixed_fds check_fds;
+
   NS::Exit e = "cat"_C() < "doesntexists";
 
   EXPECT_TRUE(e[0].setup_error());
@@ -16,6 +19,8 @@ TEST(Error, ReadFile) {
 } // Error.ReadFile
 
 TEST(Error, WriteFile) {
+  check_fixed_fds check_fds;
+
   {
     NS::Exit e = "cat"_C() > "/noallowed";
     ASSERT_TRUE(e[0].setup_error());
@@ -34,6 +39,8 @@ TEST(Error, WriteFile) {
 } // Error.ReadFile
 
 TEST(Error, BadCmd) {
+  check_fixed_fds check_fds;
+
   NS::Exit e = "stupidcmd"_C();
   ASSERT_TRUE(e[0].setup_error());
   EXPECT_EQ("Child process setup error", e[0].message);
@@ -41,6 +48,8 @@ TEST(Error, BadCmd) {
 } // Error.BadCmd
 
 TEST(Error, Failures) {
+  check_fixed_fds check_fds;
+
   NS::Exit e = "notexists"_C() | "cat"_C("--badoption") | "cat"_C() > "/noallowed";
   EXPECT_FALSE(e.success());
 
