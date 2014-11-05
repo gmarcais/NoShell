@@ -16,7 +16,7 @@ LDFLAGS  += -L$(TUP_CWD) -L$(PROJECT_ROOT)/lib
 LDLIBS = -lgtest_main -lnoshell
 
 TESTS  = test_fd_type.cc test_simple_command.cc test_cmd_redirection.cc test_pipeline.cc
-TESTS += test_extra_fds.cc test_literal.cc test_error.cc
+TESTS += test_extra_fds.cc test_literal.cc test_error.cc test_resources.cc
 
 !run_test = |> ^ RUN   %f^ export TEST_TMP=%B.tmp; touch $TEST_TMP; @(VALGRIND) ./%f > %o 2>&1 |> %B.log | %B.tmp
 

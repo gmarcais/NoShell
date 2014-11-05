@@ -127,7 +127,7 @@ void Handle::wait() {
   pid_t res;
   int   status;
   while(true) {
-    res = waitpid(pid, &status, 0);
+    res = wait4(pid, &status, 0, &resources);
     if(res != -1 || errno != EINTR) break;
   }
   if(res == -1) {

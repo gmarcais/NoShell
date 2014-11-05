@@ -1,7 +1,13 @@
 #ifndef __NOSHELL_HANDLE_H__
 #define __NOSHELL_HANDLE_H__
 
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <sys/wait.h>
+
 #include <algorithm>
+#include <chrono>
 #include <noshell/setters.hpp>
 
 namespace noshell {
@@ -28,6 +34,9 @@ struct Errno {
 };
 
 class Command;
+inline std::chrono::microseconds to_microseconds(const struct timeval& tp) {
+  return std::chrono::microseconds((uint64_t)tp.tv_sec * (uint64_t)1000000 + (uint64_t)tp.tv_usec);
+}
 typedef std::forward_list<std::unique_ptr<process_setup> > setup_list_type;
 struct Handle {
 
@@ -39,6 +48,7 @@ struct Handle {
     Errno     err;
   } data;
   setup_list_type setups;       // setup hooks
+  struct rusage   resources;
   std::string     message;      // error message
 
   Handle() : pid(-1), error(NO_ERROR) { }
@@ -64,6 +74,13 @@ struct Handle {
   Handle&& return_status(int st) { return std::move(set_status(st)); }
   Handle& set_errno(int e = errno) { error = SETUP_ERROR; data.err.value = e; return *this; }
   Handle&& return_errno(int e = errno) { return std::move(set_errno(e)); }
+
+  // Some easy access to resource usage statistics
+  std::chrono::microseconds user_time() const { return to_microseconds(resources.ru_utime); }
+  std::chrono::microseconds system_time() const { return to_microseconds(resources.ru_stime); }
+  long maximum_rss() const { return resources.ru_maxrss; }
+  long minor_faults() const { return resources.ru_minflt; }
+  long major_faults() const { return resources.ru_majflt; }
 
   void wait();
 };
