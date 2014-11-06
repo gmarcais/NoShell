@@ -1,5 +1,5 @@
-#ifndef __UTILS_H__
-#define __UTILS_H__
+#ifndef __NOSHELL_UTILS_H__
+#define __NOSHELL_UTILS_H__
 
 #include <cerrno>
 
@@ -34,4 +34,4 @@ struct auto_close {
 };
 
 } // namespace noshell
-#endif /* __UTILS_H__ */
+#endif /* __NOSHELL_UTILS_H__ */

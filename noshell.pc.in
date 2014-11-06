@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: NoShell
+Description: A convenience C++ library to spawn subprocesses
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lnoshell
+Cflags: -I${includedir}/noshell-@PACKAGE_VERSION@

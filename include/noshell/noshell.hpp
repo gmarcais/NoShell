@@ -1,5 +1,5 @@
-#ifndef __NOSHELL_H__
-#define __NOSHELL_H__
+#ifndef __NOSHELL_NOSHELL_H__
+#define __NOSHELL_NOSHELL_H__
 
 #include <cerrno>
 #include <sys/types.h>
@@ -217,4 +217,4 @@ template<typename T>
 inline PipeLine&& operator|(T& x, PipeLine&& pl) { return std::move(x | pl); }
 } // namespace noshell
 
-#endif /* __NOSHELL_H__ */
+#endif /* __NOSHELL_NOSHELL_H__ */
