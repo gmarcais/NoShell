@@ -1,0 +1,5 @@
+FILES = ../README.md ../doc/README.md
+
+!pandoc = |> pandoc -f markdown_github -t html %f -o %o |> 
+: ../README.md |> !pandoc |> README.html
+: ../doc/README.md |> !pandoc |> doc_README.html
