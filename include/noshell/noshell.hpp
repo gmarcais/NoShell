@@ -148,8 +148,8 @@ struct literal_create_pipe {
   PipeLine operator()(Args... args) { return create_pipe<Args...>::append(cmds, args...); }
   PipeLine operator()() { return PipeLine(Command(std::move(cmds))); }
 };
-inline literal_create_pipe operator""_C(const char* c, size_t s) { return literal_create_pipe(std::string(c, s)); }
-inline from_to_generic operator""_R(unsigned long long x) { return R((int)x); }
+inline literal_create_pipe operator"" _C(const char* c, size_t s) { return literal_create_pipe(std::string(c, s)); }
+inline from_to_generic operator"" _R(unsigned long long x) { return R((int)x); }
 };
 
 PipeLine& operator>(PipeLine& cmd, from_to_fd&& ft);
