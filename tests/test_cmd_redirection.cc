@@ -35,7 +35,7 @@ TEST_F(CmdRedirection, OutputFD) {
   EXPECT_TRUE(e.success());
   std::ifstream tmp(getenv("TEST_TMP"));
   std::string line;
-  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("coucou", line);
   EXPECT_FALSE(std::getline(tmp, line));
 }
@@ -57,9 +57,9 @@ TEST_F(CmdRedirection, OutputTmpFile) {
   EXPECT_TRUE(e.success());
   std::ifstream tmp(getenv("TEST_TMP"));
   std::string line;
-  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("coucou", line);
-  EXPECT_FALSE(std::getline(tmp, line));
+  EXPECT_FALSE((bool)std::getline(tmp, line));
 }
 
 TEST_F(CmdRedirection, AppendTmpFile) {
@@ -77,15 +77,15 @@ TEST_F(CmdRedirection, AppendTmpFile) {
 
   std::ifstream tmp(getenv("TEST_TMP"));
   std::string line;
-  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("coucou", line);
-  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("hi", line);
-  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("toto", line);
-  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("tata", line);
-  EXPECT_FALSE(std::getline(tmp, line));
+  EXPECT_FALSE((bool)std::getline(tmp, line));
 }
 
 TEST_F(CmdRedirection, InputFD) {
@@ -99,15 +99,15 @@ TEST_F(CmdRedirection, InputFD) {
   EXPECT_TRUE(e.success());
   std::ifstream tmp(getenv("TEST_TMP"));
   std::string line;
-  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("hello", line);
-  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("the", line);
-  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("", line);
-  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("world!", line);
-  EXPECT_FALSE(std::getline(tmp, line));
+  EXPECT_FALSE((bool)std::getline(tmp, line));
 }
 
 TEST_F(CmdRedirection, InputFile) {
@@ -118,15 +118,15 @@ TEST_F(CmdRedirection, InputFile) {
   EXPECT_TRUE(e.success());
   std::ifstream tmp(getenv("TEST_TMP"));
   std::string line;
-  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("hello", line);
-  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("the", line);
-  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("", line);
-  EXPECT_TRUE(std::getline(tmp, line));
+  EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("world!", line);
-  EXPECT_FALSE(std::getline(tmp, line));
+  EXPECT_FALSE((bool)std::getline(tmp, line));
 }
 
 TEST_F(CmdRedirection, OutputPipe) {
@@ -154,7 +154,7 @@ TEST_F(CmdRedirection, InputPipe) {
   check_fixed_fds check_fds;
 
   FILE* f = nullptr;
-  NS::Exit e = f | NS::C("cat") > getenv("TEST_TMP");
+  NS::Exit e = (f | NS::C("cat")) > getenv("TEST_TMP");
 
   ASSERT_FALSE(e[0].setup_error());
   ASSERT_NE(nullptr, f);
@@ -168,13 +168,14 @@ TEST_F(CmdRedirection, InputPipe) {
 
   std::ifstream tmp(getenv("TEST_TMP"));
   std::string line;
-  ASSERT_TRUE(std::getline(tmp, line));
+  ASSERT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("hello", line);
-  ASSERT_TRUE(std::getline(tmp, line));
+  ASSERT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("the world", line);
-  ASSERT_FALSE(std::getline(tmp, line));
+  ASSERT_FALSE((bool)std::getline(tmp, line));
 }
 
+#if defined(__GLIBCXX__) || defined(HAVE_STDIO_FILEBUF_H)
 TEST_F(CmdRedirection, OutputStream) {
   check_fixed_fds check_fds;
 
@@ -184,11 +185,11 @@ TEST_F(CmdRedirection, OutputStream) {
   ASSERT_TRUE(is.good());
 
   std::string line;
-  EXPECT_TRUE(std::getline(is, line));
+  EXPECT_TRUE((bool)std::getline(is, line));
   EXPECT_EQ("coucou", line);
-  EXPECT_TRUE(std::getline(is, line));
+  EXPECT_TRUE((bool)std::getline(is, line));
   EXPECT_EQ("hello", line);
-  EXPECT_FALSE(std::getline(is, line));
+  EXPECT_FALSE((bool)std::getline(is, line));
   is.close();
 
   e.wait();
@@ -199,7 +200,7 @@ TEST_F(CmdRedirection, InputStream) {
   check_fixed_fds check_fds;
 
   NS::ostream os;
-  NS::Exit e = os | NS::C("cat") > getenv("TEST_TMP");
+  NS::Exit e = (os | NS::C("cat")) > getenv("TEST_TMP");
 
   ASSERT_FALSE(e[0].setup_error());
   ASSERT_TRUE(os.good());
@@ -212,12 +213,13 @@ TEST_F(CmdRedirection, InputStream) {
 
   std::ifstream tmp(getenv("TEST_TMP"));
   std::string line;
-  ASSERT_TRUE(std::getline(tmp, line));
+  ASSERT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("hello", line);
-  ASSERT_TRUE(std::getline(tmp, line));
+  ASSERT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("the world", line);
-  ASSERT_FALSE(std::getline(tmp, line));
+  ASSERT_FALSE((bool)std::getline(tmp, line));
 }
+#endif // defined(__GLIBCXX__) || defined(HAVE_STDIO_FILEBUF_H)
 
 TEST_F(CmdRedirection, OutErr1) {
   check_fixed_fds check_fds;
@@ -227,9 +229,9 @@ TEST_F(CmdRedirection, OutErr1) {
   ASSERT_TRUE(e.success());
   std::ifstream tmp(getenv("TEST_TMP"));
   std::string line;
-  ASSERT_TRUE(std::getline(tmp, line));
+  ASSERT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("bah", line);
-  ASSERT_FALSE(std::getline(tmp, line));
+  ASSERT_FALSE((bool)std::getline(tmp, line));
 } // CmdRedirection.OutErr1
 
 TEST_F(CmdRedirection, OutErr2) {
@@ -240,30 +242,34 @@ TEST_F(CmdRedirection, OutErr2) {
   ASSERT_TRUE(e.success());
   std::ifstream tmp(getenv("TEST_TMP"));
   std::string line;
-  ASSERT_TRUE(std::getline(tmp, line));
+  ASSERT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("bou", line);
-  ASSERT_FALSE(std::getline(tmp, line));
+  ASSERT_FALSE((bool)std::getline(tmp, line));
 } // CmdRedirection.OutErr2
 
 TEST_F(CmdRedirection, Path3) {
   check_fixed_fds check_fds;
 
-  NS::istream is;
-  NS::Exit e = "cat"_C("/dev/fd/3") < 3_R("text_file.txt") | is;
-  //  NS::Exit e = "ls"_C("-l", "/proc/self/fd") < 3_R("text_file.txt");
+  FILE* st;
+  NS::Exit e = ("cat"_C("/dev/fd/3") < 3_R("text_file.txt")) | st;
 
   EXPECT_FALSE(e[0].setup_error());
 
-  std::string line;
-  EXPECT_TRUE(std::getline(is, line));
-  EXPECT_EQ("hello", line);
-  EXPECT_TRUE(std::getline(is, line));
-  EXPECT_EQ("the", line);
-  EXPECT_TRUE(std::getline(is, line));
-  EXPECT_EQ("", line);
-  EXPECT_TRUE(std::getline(is, line));
-  EXPECT_EQ("world!", line);
-  EXPECT_FALSE(std::getline(is, line));
+  char*  line      = nullptr;
+  size_t line_size = 0;
+  EXPECT_LT(0, getline(&line, &line_size, st));
+  EXPECT_STREQ("hello\n", line);
+  EXPECT_LT(0, getline(&line, &line_size, st));
+  EXPECT_STREQ("the\n", line);
+  EXPECT_LT(0, getline(&line, &line_size, st));
+  EXPECT_STREQ("\n", line);
+  EXPECT_LT(0, getline(&line, &line_size, st));
+  EXPECT_STREQ("world!\n", line);
+  errno = 0;
+  EXPECT_EQ(-1, getline(&line, &line_size, st));
+  EXPECT_EQ(0, errno);
+  fclose(st);
+  free(line);
 
   e.wait();
   ASSERT_TRUE(e.success());
@@ -306,6 +312,7 @@ TEST_F(CmdRedirection, OutPipe2) {
   ASSERT_TRUE(e.success());
 } // CmdRedirection.OutPipe2
 
+#if defined(__GLIBCXX__) || defined(HAVE_STDIO_FILEBUF_H)
 TEST_F(CmdRedirection, OutStream1) {
   check_fixed_fds check_fds;
 
@@ -314,9 +321,9 @@ TEST_F(CmdRedirection, OutStream1) {
   ASSERT_NE(-1, is.fd());
 
   std::string line;
-  EXPECT_TRUE(std::getline(is, line));
+  EXPECT_TRUE((bool)std::getline(is, line));
   EXPECT_EQ("yougadie", line);
-  EXPECT_FALSE(std::getline(is, line));
+  EXPECT_FALSE((bool)std::getline(is, line));
 
   e.wait();
   ASSERT_TRUE(e.success());
@@ -330,13 +337,14 @@ TEST_F(CmdRedirection, OutStream2) {
   ASSERT_NE(-1, is.fd());
 
   std::string line;
-  EXPECT_TRUE(std::getline(is, line));
+  EXPECT_TRUE((bool)std::getline(is, line));
   EXPECT_EQ("pouf pouf", line);
-  EXPECT_FALSE(std::getline(is, line));
+  EXPECT_FALSE((bool)std::getline(is, line));
 
   e.wait();
   ASSERT_TRUE(e.success());
 } // CmdRedirection.OutPipe1
+#endif // defined(__GLIBCXX__) || defined(HAVE_STDIO_FILEBUF_H)
 
 
 } // empty namespace

@@ -37,7 +37,7 @@ TEST_F(ExtraFds, Redirection) {
   cmd.push_back("./check_open_fd");
   for(auto fd : fds) cmd.push_back(std::to_string(fd));
 
-  NS::Exit e = NS::C(cmd) | NS::C("cat") < "/dev/null" > getenv("TEST_TMP");
+  NS::Exit e = (NS::C(cmd) | NS::C("cat")) < "/dev/null" > getenv("TEST_TMP");
   ASSERT_TRUE(e.success());
 
   auto new_fds = open_fds();

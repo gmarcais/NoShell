@@ -1,8 +1,8 @@
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <iterator>
-
-#include <ext/stdio_filebuf.h>
+#include <string>
 
 #include <noshell/utils.hpp>
 #include <noshell/setters.hpp>

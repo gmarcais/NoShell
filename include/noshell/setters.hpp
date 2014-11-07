@@ -1,10 +1,16 @@
 #ifndef __NOSHELL_SETTERS_H__
 #define __NOSHELL_SETTERS_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <vector>
 #include <set>
 
+#if defined(__GLIBCXX__) || defined(HAVE_STDIO_FILEBUF_H)
 #include <ext/stdio_filebuf.h>
+#endif
 
 namespace noshell {
 // File descriptor type. Behaves like an int, can be initialize from
@@ -164,6 +170,7 @@ struct stdio_pipe_redirection_setter : public fd_pipe_redirection_setter {
   virtual process_setup* make_setup(std::string& err, std::set<int>& rfds);
 };
 
+#if defined(__GLIBCXX__) || defined(HAVE_STDIO_FILEBUF_H)
 // Same as above but with a C++ stream
 template<typename T>
 class base_stream : public T {
@@ -221,7 +228,7 @@ struct stream_pipe_redirection_setter : public fd_pipe_redirection_setter {
     return setup;
   }
 };
-
+#endif // defined(__GLIBCXX__) || defined(HAVE_STDIO_FILEBUF_H)
 
 // Traits to select the proper setter
 template<typename T>
@@ -237,6 +244,7 @@ struct setter_traits<FILE*> {
   typedef stdio_pipe_redirection_setter setter_type;
 };
 
+#if defined(__GLIBCXX__) || defined(HAVE_STDIO_FILEBUF_H)
 template<>
 struct setter_traits<istream> {
   typedef stream_pipe_redirection_setter<istream> setter_type;
@@ -246,6 +254,7 @@ template<>
 struct setter_traits<ostream> {
   typedef stream_pipe_redirection_setter<ostream> setter_type;
 };
+#endif // defined(__GLIBCXX__) || defined(HAVE_STDIO_FILEBUF_H)
 
 } // namespace noshell
 

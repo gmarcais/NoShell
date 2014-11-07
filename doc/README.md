@@ -102,6 +102,21 @@ works as expected. It records the `stderr` of the big command
 into the file `log`, pipe the `stdout` to the grep and record the
 output of the `grep` in the file `headers`.
 
+The above command is different than:
+
+```cpp
+noshell::Exit e = "some_big_command"_C() | "grep"_C("^>") > "headers" > 2_R("log");
+```
+
+where the `stderr` of `grep` is recorded in the `log` file.
+
+Note that `gcc` with `-Wparentheses` (implied by `-Wall`) may suggest
+to add parentheses. Although less pretty, the above is equivalent to:
+
+```cpp
+noshell::Exit e = (("some_big_command"_C() | "grep"_C("^>")) > "headers") > 2_R("log");
+```
+
 ## Popen equivalent
 
 Similarly to the `popen()` function, one can get a pipe opened to

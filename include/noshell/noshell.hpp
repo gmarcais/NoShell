@@ -112,7 +112,9 @@ struct from_to_generic {
   //  from_to_fd to(FILE* f) { return from_to_fd(std::move(from), fileno(f)); }
   from_to_ref<int> to(int& fd) { return from_to_ref<int>(std::move(from), fd); }
   from_to_ref<FILE*> to(FILE*& fd) { return from_to_ref<FILE*>(std::move(from), fd); }
+#if defined(__GLIBCXX__) || defined(HAVE_STDIO_FILEBUF_H)
   from_to_ref<istream> to(istream& is) { return from_to_ref<istream>(std::move(from), is); }
+#endif
   template<typename T>
   auto operator()(T x) -> decltype(to(x)) { return to(x); }
 };

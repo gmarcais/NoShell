@@ -51,7 +51,7 @@ TEST(Error, BadCmd) {
 TEST(Error, Failures) {
   check_fixed_fds check_fds;
 
-  NS::Exit e = "notexists"_C() | "cat"_C("--badoption") | "cat"_C() > "/noallowed";
+  NS::Exit e = ("notexists"_C() | "cat"_C("--badoption") | "cat"_C()) > "/noallowed";
   EXPECT_FALSE(e.success());
 
   {

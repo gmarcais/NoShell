@@ -4,6 +4,7 @@
 #include <fcntl.h>
 
 #include <type_traits>
+#include <fstream>
 
 #include <gtest/gtest.h>
 #include <noshell/setters.hpp>

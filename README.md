@@ -44,19 +44,21 @@ For more documentation and examples, see the `doc` directory.
 Using a shell to interpret the command passed to "`system()`",
 "`popen()`", or equivalent, is full of problems. The shell has a very
 complex syntax and the parsing of a command from a string brings
-[security issues][1] and problems with escaping (e.g. spaces in paths,
+[security issues][shell shock] and problems with escaping (e.g. spaces in paths,
 special characters, etc.).
 
 Starting sub-process with `fork()/exec()` or `spawn()`, and making the
 redirections with `pipe()/dup()` is not so easy and takes a lot of
-code. NoShell makes all of this simple and convenient.
+boilerplate code. It is easy to get it wrong and leak resources (file
+descriptors, memory). NoShell makes all of this simple and convenient,
+and does not leak resources.
 
 NoShell brings some of the functionality of a shell (running multiple
-process in a pipeline with input/output redirections) without those
+process in a pipeline with input/output redirections) without its
 problems: the strings are not interpreted and passed directly as
 arguments to the exec call.
 
-[1]: http://en.wikipedia.org/wiki/Shellshock_(software_bug) "Shellshock"
+[shell shock]: http://en.wikipedia.org/wiki/Shellshock_(software_bug) "Shellshock"
 
 ## Installation
 
