@@ -54,24 +54,34 @@ TEST(Error, Failures) {
   NS::Exit e = "notexists"_C() | "cat"_C("--badoption") | "cat"_C() > "/noallowed";
   EXPECT_FALSE(e.success());
 
-  ssize_t i = 0;
-  for(auto it = e.failures().begin(); it != e.failures().end(); ++it) {
-    EXPECT_EQ(i, it.id());
-    if(i == 0) {
-      EXPECT_TRUE(it->setup_error());
-      //      EXPECT_EQ(ENOENT, it->err().value);
-      EXPECT_NE(0, it->err().value);
-    } else if(i == 1) {
-      EXPECT_FALSE(it->setup_error());
-      EXPECT_TRUE(it->have_status());
-      EXPECT_NE(0, it->status().exit_status());
-    } else if(i == 2) {
-      EXPECT_TRUE(it->setup_error());
-      EXPECT_EQ(EACCES, it->err().value);
+  {
+    ssize_t i = 0;
+    for(const auto& it : e.failures()) {
+      EXPECT_EQ(i, e.id(it));
+      if(i == 0) {
+        EXPECT_TRUE(it.setup_error());
+        //      EXPECT_EQ(ENOENT, it.err().value);
+        EXPECT_NE(0, it.err().value);
+      } else if(i == 1) {
+        EXPECT_FALSE(it.setup_error());
+        EXPECT_TRUE(it.have_status());
+        EXPECT_NE(0, it.status().exit_status());
+      } else if(i == 2) {
+        EXPECT_TRUE(it.setup_error());
+        EXPECT_EQ(EACCES, it.err().value);
+      }
+      ++i;
     }
-    ++i;
+  }
+
+  {
+    ssize_t i = 0;
+    for(const auto& it : e) {
+      EXPECT_EQ(i, e.id(it));
+      ++i;
+    }
+    EXPECT_EQ((ssize_t)3, i);
   }
 } // Error.Failures
-
 
 } // empty namespace

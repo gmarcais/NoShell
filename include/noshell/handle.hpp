@@ -18,6 +18,7 @@ struct Status {
   int exit_status() const { return WEXITSTATUS(value); }
   bool signaled() const { return WIFSIGNALED(value); }
   int term_sig() const { return WTERMSIG(value); }
+  std::string signal() const { return std::string(strsignal(WTERMSIG(value))); }
   bool core_dump() const {
 #ifdef WCOREDUMP
     return WCOREDUMP(value);
@@ -109,12 +110,13 @@ class Failures {
 
 public:
   Failures(const std::vector<Handle>& h) : handles(h) { }
-  iterator begin() { return iterator(handles); }
-  iterator end() { return iterator(handles, handles.cend()); }
+  iterator begin() const { return iterator(handles); }
+  iterator end() const { return iterator(handles, handles.cend()); }
 };
 // Return status of a pipeline
 class Exit {
-  std::vector<Handle> handles;
+  std::vector<Handle>                         handles;
+  typedef std::vector<Handle>::const_iterator const_iterator;
 
 public:
   Exit() = default;
@@ -125,6 +127,11 @@ public:
   }
   Failures failures() const { return Failures(handles); }
   const Handle& operator[](int i) { return handles[i]; }
+
+  ssize_t id(const Handle& h) { return &h - handles.data(); }
+  const_iterator begin() const { return handles.begin(); }
+  const_iterator end() const { return handles.end(); }
+
 
   void push_handle(Handle&& h) { handles.push_back(std::move(h)); }
   void wait() { for(auto& h : handles) h.wait(); }

@@ -2,10 +2,10 @@
 
 ## Overview
 
-The NoShell C++ library allows to easily starts sub-process with a
+The NoShell C++11 library allows to easily starts sub-process with a
 syntax similar to the shell while not using the shell. It like using
-the "`system()`", "`popen()`", or "`spawn`" calls, but much more powerful
-and easier to use.
+the "`system()`", "`popen()`", or "`spawn()`" calls, but easier to use
+and features similar to the shell.
 
 For example, the following code will run the "`grep`" command and
 setup the stream `is` to read from its standard out.
