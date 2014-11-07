@@ -19,7 +19,7 @@ arguments in parenthesis, like a function call. For example:
 noshell::Exit e = "git"_C("init");
 ```
 
-is equivalent to running "`git init`".
+is equivalent to running `git init`.
 
 ## Input/Output redirections from files
 
@@ -30,16 +30,17 @@ that file. For example:
 
 ```cpp
 noshell::Exit e = "date"_C() > "now";
+```
 
 will write the output of the command `date` to the file `now`, similar
-to "`date > now`". Similarly
+to `date > now`. Similarly
 
 ```cpp
 noshell::Exit e = "ls"_C("-l") >> "files;
 ```
 
-appends the content of the current directory to "`files`', just like
-"`ls -l >> files`".
+appends the content of the current directory to `files`', just like
+`ls -l >> files`.
 
 Multiple redirections can be specified at once. The syntax `2_R(path)`
 can be used to redirect file descriptor 2 (stderr) rather than the
@@ -57,7 +58,7 @@ used to redirect stdout and stderr to the same file:
 noshell::Exit e = "big_command"_C() > "output_file" > 2_R(1);
 ```
 
-which is similar to "`big_command > output_file 2>&1`".
+which is similar to `big_command > output_file 2>&1`.
 
 ## Input/Output redirections from descriptors/streams
 
@@ -67,13 +68,13 @@ descriptor (an `int`) or stdio stream (a `FILE*`). For example:
 ```cpp
 int fd          = open("inputfile", O_RDONLY);
 FILE* st        = fopen("outputfile", "w");
-noshell::Exit e = "grep"_C("-v", "^\s") < fd > st;
+noshell::Exit e = "grep"_C("-v", "^\\s") < fd > st;
 fclose(st);
 close(fd);
 ```
 
-will filter out all lines of "`inputfile`" that start with a space and
-write the result to "`outputfile`".
+will filter out all lines of `inputfile` that start with a space and
+write the result to `outputfile`.
 
 # Pipelines
 
@@ -84,7 +85,7 @@ input of the next, using the operator `|`.
 For example,
 
 ```cpp
-noshell::Exit e = "find"_C(".", "-type", "d") | "grep"_C("^\d") | "xargs"_C("rm", "-rf");
+noshell::Exit e = "find"_C(".", "-type", "d") | "grep"_C("^\\d") | "xargs"_C("rm", "-rf");
 ```
 will happily erase every directory whose name starts with a digit.
 
@@ -103,7 +104,7 @@ output of the `grep` in the file `headers`.
 
 ## Popen equivalent
 
-Similarly to the "`popen()`" function, one can get a pipe opened to
+Similarly to the `popen()` function, one can get a pipe opened to
 the input or output of a command. This works with file descriptors,
 stdio streams and C++ streams (see warning below).
 
@@ -175,7 +176,7 @@ For example:
 
 ```cpp
 noshell::ostream os;
-noshell::Exit e = os | "grep"_C("^1") > "result;
+noshell::Exit e = os | "grep"_C("^1") > "result";
 // Feed some data to the grep process
 os << 1 << '\n' << 2 << '\n' << 15 '\n' << 31;
 // Close pipe so grep stop processing
@@ -190,7 +191,7 @@ equivalent to:
 
 ```cpp
 noshell::ostream os;
-noshell::PipeLine p = os | "grep"_C("^1") > "result;
+noshell::PipeLine p = os | "grep"_C("^1") > "result";
 noshell::Exit e     = p.run();
 ```
 
@@ -217,7 +218,7 @@ e.wait();
 ## Success or not?
 
 An object `e` of type `noshell::Exit` contains all the information
-about the running command. Then `e.success()` returns true if all the
+about the running command. Then `e.success()` returns `true` if all the
 commands in the pipeline where started without errors and return an
 exit status of 0.
 
@@ -236,11 +237,11 @@ for(const auto& h : e) {
   std::cout << "Command " << e.id(h) << ": ";
   if(h.have_status()) {
     if(h.status().exited())
-      std::cout << "exited normally with status " << h.status().exit_status() << "\n";
+      std::cout << "exited normally with status " << h.status().exit_status() << '\n';
     if(h.status.signaled())
       std::cout << "killed by signal " << h.status().term_sig() << "(" << h.status().signal() << ")\n";
   } else if(h.setup_error()) {
-    std::cout << "failed to run: " << h.what() << "\n";
+    std::cout << "failed to run: " << h.what() << '\n';
   } else {
     std::cout << "was not run\n";
   }
