@@ -67,7 +67,11 @@ struct Handle {
   std::string what() const { return message + ": " + data.err.what(); }
   bool have_status() const { return error == STATUS; }
   const Status& status() const { return data.status; }
-  bool success() const { return !setup_error() && have_status() && status().exited() && status().exit_status() == 0; }
+  bool success(const bool ignore_sigpipe = false) const {
+    return !setup_error() && have_status() &&
+      ((status().exited() && status().exit_status() == 0) ||
+       (ignore_sigpipe && status().signaled() && status().term_sig() == SIGPIPE));
+  }
 
   Handle& set_error(error_types et) { asm("int3"); error = et; return *this; }
   Handle&& return_error(error_types et) { return std::move(set_error(et)); }
@@ -122,8 +126,8 @@ public:
   Exit() = default;
   Exit(Exit&& rhs) : handles(std::move(rhs.handles)) { }
   Exit(PipeLine&& pipeline);
-  bool success() const {
-    return std::all_of(handles.begin(), handles.end(), [](const Handle& h) { return h.success(); });
+  bool success(const bool ignore_sigpipe = false) const {
+    return std::all_of(handles.begin(), handles.end(), [=](const Handle& h) { return h.success(ignore_sigpipe); });
   }
   Failures failures() const { return Failures(handles); }
   const Handle& operator[](int i) { return handles[i]; }

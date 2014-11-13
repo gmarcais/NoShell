@@ -12,7 +12,7 @@ commands. NoShell uses directly `fork()` and `exec()`.
 ## Running a command
 
 To create a command, add `_C` after a string (this is a user defined
-literals. See [No Literals](#No Literals) for an alternative) and pass any
+literals. See [No Literals](#No literals) for an alternative) and pass any
 arguments in parenthesis, like a function call. For example:
 
 ```cpp
@@ -286,7 +286,30 @@ for(const auto& h : e.failures()) {
 }
 ```
 
-## No literals
+## The infamous SIGPIPE
+
+When a process try to write to a pipe where the reading end has been
+closed, it will get a SIGPIPE signal, which by default kills the
+process. This situation happens often in cases like this:
+
+```cpp
+noshell::Exit e = "cat"_C("large_file") | "head"_C(1);
+e.success(); // Most likely will return false
+```
+
+Most likely `head` has closed its standard input before `cat` was
+finished writing and `cat` was killed by `SIGPIPE`, which NoShell
+reports as an error by default (unlike a shell which only look at the
+last command in the pipeline). On the other hand, this termination on
+`SIGPIPE` may not be considered as and error and can be ignored by
+passing true to `success()`:
+
+```cpp
+noshell::Exit e = "cat"_C("large_file") | "head"_C(1);
+e.success(true); // Most likely will return true
+```
+
+## No literals <a name="No literals"></a>
 
 All the examples in this page make use of the user defined literal
 `_C` and `_R` for command and redirection. If one does not fancy this

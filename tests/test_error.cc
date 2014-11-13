@@ -84,4 +84,13 @@ TEST(Error, Failures) {
   }
 } // Error.Failures
 
+TEST(Error, SigPipe) {
+  NS::Exit e = ("cat"_C("/dev/zero") | "head"_C("-c", 1)) > "/dev/null";
+  EXPECT_FALSE(e.success());
+  EXPECT_TRUE(e.success(true));
+  EXPECT_FALSE(e[0].success());
+  EXPECT_TRUE(e[0].success(true));
+  EXPECT_TRUE(e[1].success());
+} // Error.SigPipe
+
 } // empty namespace

@@ -37,7 +37,9 @@ redirection of the standard output of `grep` to the standard input of
 `wc` and the standard output of `wc` to the file "`ncpus`" is done by
 the NoShell library itself.
 
-For more documentation and examples, see the `doc` directory.
+For more documentation and examples, see the [doc][github doc] directory.
+
+[github doc]: https://github.com/gmarcais/NoShell/tree/master/doc
 
 ## Why such a library?
 
