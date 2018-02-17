@@ -8,6 +8,8 @@
 
 #include <algorithm>
 #include <chrono>
+#include <memory>
+#include <cstring>
 #include <noshell/setters.hpp>
 
 namespace noshell {

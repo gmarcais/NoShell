@@ -75,6 +75,8 @@ inline std::string convert_to_string(T x) { return std::to_string(x); }
 template<>
 inline std::string convert_to_string(std::string x) { return x; }
 template<>
+inline std::string convert_to_string(char* x) { return std::string(x); }
+template<>
 inline std::string convert_to_string(const char* x) { return std::string(x); }
 
 template<typename T, typename... Args>
