@@ -1,1 +1,16 @@
 .tup
+build-*
+*~
+*.in
+*.m4
+*.cache
+compile
+compile_commands.json
+config.guess
+config.sub
+configure
+depcomp
+install-sh
+ltmain.sh
+missing
+test-driver

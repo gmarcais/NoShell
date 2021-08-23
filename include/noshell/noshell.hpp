@@ -18,6 +18,7 @@ typedef std::forward_list<std::unique_ptr<process_setter> > setter_list_type;
 class Command {
   std::vector<std::string> cmd;
   setter_list_type         setters;
+  setup_list_type          setups;
 public:
   std::set<int>            redirected; // Set of redirected file descriptors
 
@@ -35,6 +36,7 @@ public:
   Command(std::initializer_list<std::string> l) : cmd(l) { }
 
   void push_setter(process_setter* setter);
+  void push_setup(process_setup* setup);
 
   Handle run(process_setup* setup = nullptr);
   Handle run_wait();
@@ -65,6 +67,10 @@ public:
   friend PipeLine& operator>>(PipeLine& pl, from_to_path&& ft);
   friend PipeLine& operator<(PipeLine& pl, from_to_fd&& ft);
   friend PipeLine& operator<(PipeLine& pl, from_to_path&& ft);
+  template<typename F>
+  PipeLine& operator()(F&& fun) &; // Add setup operation
+  template<typename F>
+  PipeLine&& operator()(F&& fun) &&;
 };
 
 // Structure to create pipeline object. Works with arbitrary number of
@@ -219,6 +225,18 @@ template<typename T>
 inline PipeLine& operator|(T& x, PipeLine& pl) { return from_to_ref<T>(0, x) | pl; }
 template<typename T>
 inline PipeLine&& operator|(T& x, PipeLine&& pl) { return std::move(x | pl); }
+
+template<typename F>
+PipeLine& PipeLine::operator()(F&& fun) & {
+  commands.back().push_setup(new user_process_setup<F>(std::forward<F>(fun)));
+  return *this;
+}
+template<typename F>
+PipeLine&& PipeLine::operator()(F&& fun) && {
+  commands.back().push_setup(new user_process_setup<F>(std::forward<F>(fun)));
+  return std::move(*this);
+}
+
 } // namespace noshell
 
 #endif /* __NOSHELL_NOSHELL_H__ */

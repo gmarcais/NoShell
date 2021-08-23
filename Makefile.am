@@ -1,7 +1,9 @@
+SUBDIRS = . tests
 ACLOCAL_AMFLAGS = -I m4
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/include
 AM_CXXFLAGS = -O3
+LDADD = libnoshell.la
 
 # Build library
 lib_LTLIBRARIES = libnoshell.la
@@ -18,3 +20,5 @@ dist_sub_HEADERS = $(INCDIR)/noshell.hpp $(INCDIR)/handle.hpp	\
 # Install pc file
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = noshell.pc
+
+

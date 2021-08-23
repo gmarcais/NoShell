@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 #include <noshell/noshell.hpp>
+#include <sys/resource.h>
 
 namespace {
 namespace NS = noshell;
@@ -49,5 +50,18 @@ TEST(PipeLine, TwoCommands) {
   EXPECT_TRUE(e[1].have_status());
   EXPECT_EQ(0, e[1].status().exit_status());
 } // PipeLine.TwoCommands
+
+TEST(PipeLine, Setup) {
+  int normal, niced;
+  { NS::istream is;
+    NS::Exit e = NS::C("nice") | is;
+    is >> normal;
+  }
+  { NS::istream is;
+    NS::Exit e = NS::C("nice")([]() -> bool { nice(1); return true; }) | is;
+    is >> niced;
+  }
+  EXPECT_EQ(normal, normal == 19 ? normal : niced - 1);
+}
 
 } // empty namespace

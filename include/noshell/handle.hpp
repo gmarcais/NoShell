@@ -1,6 +1,7 @@
 #ifndef __NOSHELL_HANDLE_H__
 #define __NOSHELL_HANDLE_H__
 
+#include <forward_list>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>

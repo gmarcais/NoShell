@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <noshell/noshell.hpp>
-#include "test_misc.hpp"
+#include "libtest_misc.hpp"
 
 
 namespace {

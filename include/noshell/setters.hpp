@@ -230,6 +230,14 @@ struct stream_pipe_redirection_setter : public fd_pipe_redirection_setter {
 };
 #endif // defined(__GLIBCXX__) || defined(HAVE_STDIO_FILEBUF_H)
 
+// User process setup
+template<typename F>
+struct user_process_setup : public process_setup {
+  F fun;
+  user_process_setup(F f) : fun(f) { }
+  virtual bool child_setup() { return fun(); }
+};
+
 // Traits to select the proper setter
 template<typename T>
 struct setter_traits { };

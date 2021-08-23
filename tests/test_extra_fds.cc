@@ -13,18 +13,15 @@
 
 #include <gtest/gtest.h>
 #include <noshell/noshell.hpp>
-#include "test_misc.hpp"
+#include "libtest_misc.hpp"
 
 namespace {
 namespace NS = noshell;
+static const char *tmpfile = "ExtraFds_tmp";
 class ExtraFds : public ::testing::Test {
 protected:
   virtual void SetUp() {
-    while(true) {
-      if(truncate(getenv("TEST_TMP"), 0) != -1) break;
-      if(errno == EINTR) continue;
-      throw std::runtime_error("Failed to truncate tmp file");
-    }
+    std::ofstream os(tmpfile, std::ios::trunc | std::ios::out);
   }
 };
 
@@ -37,7 +34,7 @@ TEST_F(ExtraFds, Redirection) {
   cmd.push_back("./check_open_fd");
   for(auto fd : fds) cmd.push_back(std::to_string(fd));
 
-  NS::Exit e = (NS::C(cmd) | NS::C("cat")) < "/dev/null" > getenv("TEST_TMP");
+  NS::Exit e = (NS::C(cmd) | NS::C("cat")) < "/dev/null" > tmpfile;
   ASSERT_TRUE(e.success());
 
   auto new_fds = open_fds();

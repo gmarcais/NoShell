@@ -1,3 +1,4 @@
+#include <iterator>
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
@@ -34,11 +35,15 @@ void send_errno_to_pipe(int fd) {
   }
 }
 
-bool setup_exec_child(const std::set<int>& redirected, setup_list_type& setups, const std::vector<std::string>& cmd) {
+  bool setup_exec_child(const std::set<int>& redirected, setup_list_type& setups, setup_list_type& user_setups, const std::vector<std::string>& cmd) {
   for(auto& it : setups)
     if(!it->fix_collisions(redirected))
       return false;
   for(auto& it : setups) {
+    if(!it->child_setup())
+      return false;
+  }
+  for(auto& it : user_setups) {
     if(!it->child_setup())
       return false;
   }
@@ -74,7 +79,7 @@ Handle Command::run(process_setup* last_setup) {
 
   case 0:
     safe_close(pipe_fds[0]);
-    setup_exec_child(redirected, ret.setups, cmd);
+    setup_exec_child(redirected, ret.setups, setups, cmd);
     send_errno_to_pipe(pipe_fds[1]);
     exit(0);
 
@@ -118,6 +123,10 @@ Handle Command::run_wait() {
 
 void Command::push_setter(process_setter* setter) {
   setters.push_front(std::unique_ptr<process_setter>(setter));
+}
+
+void Command::push_setup(process_setup* setup) {
+  setups.push_front(std::unique_ptr<process_setup>(setup));
 }
 
 Handle::Handle(Command&& rhs) : Handle(rhs.run_wait()) { }
