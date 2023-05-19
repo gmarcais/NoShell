@@ -97,11 +97,17 @@ class PipeLine;
 class Failures {
   const std::vector<Handle>& handles;
 
-  class iterator : public std::iterator<std::forward_iterator_tag, Handle> {
+  class iterator {
     typedef std::vector<Handle>::const_iterator handle_iterator;
     handle_iterator            it;
     const std::vector<Handle>& handles;
   public:
+    typedef std::forward_iterator_tag iterator_category;
+    typedef Handle value_type;
+    typedef Handle* pointer;
+    typedef Handle& reference;
+    typedef ptrdiff_t difference_type;
+
     iterator(const std::vector<Handle>& h) : it(h.cbegin()), handles(h) { }
     iterator(const std::vector<Handle>& h, handle_iterator i) : it(i), handles(h) { }
     //    iterator(const handle_iterator i) : it(i) { }
