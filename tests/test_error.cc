@@ -21,18 +21,20 @@ TEST(Error, ReadFile) {
 TEST(Error, WriteFile) {
   check_fixed_fds check_fds;
 
+  #define nadirw "WriteFileNotAllowed"
+  not_allowed_dir dir(nadirw);
   {
-    NS::Exit e = "cat"_C() > "/noallowed";
+    NS::Exit e = "cat"_C() > nadirw "/noallowed";
     ASSERT_TRUE(e[0].setup_error());
-    const std::string expect = "Failed to open the file '/noallowed' for writing";
+    const std::string expect = "Failed to open the file '" nadirw "/noallowed' for writing";
     EXPECT_EQ(expect, e[0].message);
     EXPECT_EQ(EACCES, e[0].data.err.value);
   }
 
   {
-    NS::Exit e = "cat"_C() > "/doesntexists/stupid";
+    NS::Exit e = "cat"_C() > nadirw "/doesntexists/stupid";
     ASSERT_TRUE(e[0].setup_error());
-    const std::string expect = "Failed to open the file '/doesntexists/stupid' for writing";
+    const std::string expect = "Failed to open the file '" nadirw "/doesntexists/stupid' for writing";
     EXPECT_EQ(expect, e[0].message);
     EXPECT_EQ(ENOENT, e[0].data.err.value);
   }
@@ -50,8 +52,10 @@ TEST(Error, BadCmd) {
 
 TEST(Error, Failures) {
   check_fixed_fds check_fds;
+  #define nadirf "FailuresNotAllowed"
+  not_allowed_dir dir(nadirf);
 
-  NS::Exit e = ("notexists"_C() | "cat"_C("--badoption") | "cat"_C()) > "/noallowed";
+  NS::Exit e = ("notexists"_C() | ("cat"_C("--badoption") > 2_R("/dev/null")) | "cat"_C()) > nadirf "/noallowed";
   EXPECT_FALSE(e.success());
 
   {

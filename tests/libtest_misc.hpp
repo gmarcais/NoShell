@@ -2,8 +2,12 @@
 #define __TEST_MISC_H__
 
 #include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include <vector>
+#include <stdexcept>
+#include <iostream>
 
 std::vector<int> open_fds();
 
@@ -23,6 +27,19 @@ struct check_fixed_fds {
       << "Set of opened file descriptors changed";
   }
   ~check_fixed_fds() { run_check(); }
+};
+
+struct not_allowed_dir {
+  const char* path;
+  not_allowed_dir(const char* p)
+    : path(p) {
+    if(mkdir(path, 0) == -1 && errno != EEXIST) throw std::runtime_error("Can't create not allowed dir");
+    if(chmod(path, S_IRUSR | S_IXUSR) == -1) throw std::runtime_error("Can't set rights on dir");
+  }
+  ~not_allowed_dir() {
+    if(rmdir(path) == -1)
+      std::cerr << "Can't unlink not writable dir " << strerror(errno) << std::endl;
+  }
 };
 
 #endif /* __TEST_MISC_H__ */
