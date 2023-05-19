@@ -147,6 +147,24 @@ void Handle::wait() {
   }
 }
 
+std::ostream& operator<<(std::ostream& os, const Handle& handle) {
+  os << handle.pid << ':';
+  if(handle.setup_error()) {
+      os << handle.what();
+  } else if(handle.have_status()) {
+    if(handle.status().exited()) {
+      os << "ret:" << handle.status().exit_status();
+    } else if(handle.status().signaled()) {
+      os << "sig:" << handle.status().term_sig() << ':' << handle.status().signal();
+    } else {
+      os << "unknown";
+    }
+  } else {
+    os << '-';
+  }
+  return os;
+}
+
 Exit::Exit(PipeLine&& rhs) : Exit(rhs.run_wait_auto()) { }
 
 Exit PipeLine::run() {

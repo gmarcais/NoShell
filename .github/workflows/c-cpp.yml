@@ -14,8 +14,10 @@ jobs:
     steps:
     - uses: ConorMacBride/install-package@v1
       with:
-        apt: libgtest-dev
+        apt: libgtest-dev strace
     - uses: actions/checkout@v3
+    - name: SIGPIPE
+      run: 'uname -a && cat --version; strace -o cat.log cat /dev/zero | head -c 1 > /dev/null; echo ${PIPESTATUS[@]}'
     - name: autoconf
       run: autoreconf -fi
     - name: configure
@@ -31,5 +33,5 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: gtest-logs
-        path: tests/*.log
+        path: '**/*.log'
         retention-days: 1

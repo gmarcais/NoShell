@@ -76,7 +76,7 @@ struct Handle {
        (ignore_sigpipe && status().signaled() && status().term_sig() == SIGPIPE));
   }
 
-  Handle& set_error(error_types et) { asm("int3"); error = et; return *this; }
+  Handle& set_error(error_types et) { error = et; return *this; }
   Handle&& return_error(error_types et) { return std::move(set_error(et)); }
   Handle& set_status(int st) { error = STATUS; data.status.value = st; return *this; }
   Handle&& return_status(int st) { return std::move(set_status(st)); }
@@ -92,6 +92,8 @@ struct Handle {
 
   void wait();
 };
+
+std::ostream& operator<<(std::ostream& os, const Handle& handle);
 
 class PipeLine;
 class Failures {
@@ -149,6 +151,16 @@ public:
   void push_handle(Handle&& h) { handles.push_back(std::move(h)); }
   void wait() { for(auto& h : handles) h.wait(); }
 };
+
+std::ostream& operator<<(std::ostream& os, const Exit& exit) {
+  auto it = exit.begin();
+  if(it != exit.end()) {
+    os << *it;
+    for(++it; it != exit.end(); ++it)
+      os << '|' << *it;
+  }
+  return os;
+}
 } // namespace noshell
 
 #endif /* __NOSHELL_HANDLE_H__ */

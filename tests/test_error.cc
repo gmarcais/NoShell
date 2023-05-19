@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <signal.h>
 #include <noshell/noshell.hpp>
 #include "libtest_misc.hpp"
 
@@ -89,7 +90,13 @@ TEST(Error, Failures) {
 } // Error.Failures
 
 TEST(Error, SigPipe) {
+  // Make sure SIGPIPE is delivered to cat
+  sigset_t signals;
+  ASSERT_EQ(0, sigemptyset(&signals));
+  ASSERT_EQ(0, sigaddset(&signals, SIGPIPE));
+  ASSERT_EQ(0, sigprocmask(SIG_UNBLOCK, &signals, nullptr));
   NS::Exit e = ("cat"_C("/dev/zero") | "head"_C("-c", 1)) > "/dev/null";
+  std::cerr << e << std::endl;
   EXPECT_FALSE(e.success());
   EXPECT_TRUE(e.success(true));
   EXPECT_FALSE(e[0].success());
