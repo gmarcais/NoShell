@@ -1,3 +1,5 @@
+![CI](https://github.com/github/docs/actions/workflows/c-cpp.yml/badge.svg)
+
 # NoShell library
 
 ## Overview
