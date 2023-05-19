@@ -58,7 +58,7 @@ TEST(PipeLine, Setup) {
     is >> normal;
   }
   { NS::istream is;
-    NS::Exit e = NS::C("nice")([]() -> bool { nice(1); return true; }) | is;
+    NS::Exit e = NS::C("nice")([]() -> bool { errno = 0; if(nice(1) == -1 && errno != 0) { return false; }; return true; }) | is;
     is >> niced;
   }
   EXPECT_EQ(normal, normal == 19 ? normal : niced - 1);
