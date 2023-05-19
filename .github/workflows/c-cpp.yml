@@ -26,3 +26,10 @@ jobs:
       run: make check
     - name: make distcheck
       run: make distcheck
+    - name: Archive testing logs
+      if: '!cancelled()'
+      uses: actions/upload-artifact@v3
+      with:
+        name: gtest-logs
+        path: tests/*.log
+        retention-days: 1
