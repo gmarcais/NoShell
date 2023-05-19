@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - uses: ConorMacBride/install-package@v1
+      with:
+        apt: libgtest-dev
     - uses: actions/checkout@v3
     - name: autoconf
       run: autoreconf -fi
