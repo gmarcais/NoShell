@@ -8,6 +8,7 @@
 #include <vector>
 #include <forward_list>
 #include <set>
+#include <memory>
 #include <initializer_list>
 
 #include <noshell/setters.hpp>
@@ -28,6 +29,7 @@ public:
   Command(Command&& rhs) noexcept
     : cmd(std::move(rhs.cmd))
     , setters(std::move(rhs.setters))
+    , setups(std::move(rhs.setups))
     , redirected(std::move(rhs.redirected))
   { }
   explicit Command(std::vector<std::string>&& c) : cmd(std::move(c)) { }

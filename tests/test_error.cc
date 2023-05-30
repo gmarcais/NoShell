@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <signal.h>
+#include <cstring>
 #include <noshell/noshell.hpp>
 #include "libtest_misc.hpp"
 
@@ -89,19 +90,40 @@ TEST(Error, Failures) {
   }
 } // Error.Failures
 
+bool sigpipe(bool block) {
+  sigset_t signals;
+  struct sigaction act;
+
+  memset(&act, '\0', sizeof(act));
+  act.sa_handler = SIG_DFL;
+  if(sigaction(SIGPIPE, &act, nullptr) == -1) return false;
+
+  if(sigemptyset(&signals) == -1) return false;
+  if(sigaddset(&signals, SIGPIPE) == -1) return false;
+  const auto action = block ? SIG_BLOCK : SIG_UNBLOCK;
+  if(sigprocmask(action, &signals, nullptr) == -1) return false;
+
+  return true;
+}
+
 TEST(Error, SigPipe) {
   // Make sure SIGPIPE is delivered to cat
-  sigset_t signals;
-  ASSERT_EQ(0, sigemptyset(&signals));
-  ASSERT_EQ(0, sigaddset(&signals, SIGPIPE));
-  ASSERT_EQ(0, sigprocmask(SIG_UNBLOCK, &signals, nullptr));
-  NS::Exit e = ("cat"_C("/dev/zero") | "head"_C("-c", 1)) > "/dev/null";
-  std::cerr << e << std::endl;
+  NS::Exit e = (NS::C("cat", "/dev/zero")([]() -> bool { return sigpipe(false); }) | "head"_C("-c", 1)); // > "/dev/null";
   EXPECT_FALSE(e.success());
   EXPECT_TRUE(e.success(true));
   EXPECT_FALSE(e[0].success());
   EXPECT_TRUE(e[0].success(true));
   EXPECT_TRUE(e[1].success());
 } // Error.SigPipe
+
+TEST(Error, EPipe) {
+  // Make sure SIGPIPE is NOT delivered to cat
+  NS::Exit e = (NS::C("cat", "/dev/zero")([]() -> bool{ return sigpipe(true); }) | "head"_C("-c", 1)); // > "/dev/null";
+  EXPECT_FALSE(e.success());
+  EXPECT_FALSE(e.success(true));
+  EXPECT_FALSE(e[0].success());
+  EXPECT_FALSE(e[0].success(true));
+  EXPECT_TRUE(e[1].success());
+} // Error.EPipe
 
 } // empty namespace

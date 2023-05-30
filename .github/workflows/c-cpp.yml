@@ -16,8 +16,6 @@ jobs:
       with:
         apt: libgtest-dev strace
     - uses: actions/checkout@v3
-    - name: SIGPIPE
-      run: 'uname -a && cat --version; strace -o cat.log cat /dev/zero | head -c 1 > /dev/null; echo ${PIPESTATUS[@]}'
     - name: autoconf
       run: autoreconf -fi
     - name: configure

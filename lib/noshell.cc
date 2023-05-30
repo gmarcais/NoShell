@@ -35,7 +35,7 @@ void send_errno_to_pipe(int fd) {
   }
 }
 
-  bool setup_exec_child(const std::set<int>& redirected, setup_list_type& setups, setup_list_type& user_setups, const std::vector<std::string>& cmd) {
+bool setup_exec_child(const std::set<int>& redirected, setup_list_type& setups, setup_list_type& user_setups, const std::vector<std::string>& cmd) {
   for(auto& it : setups)
     if(!it->fix_collisions(redirected))
       return false;
