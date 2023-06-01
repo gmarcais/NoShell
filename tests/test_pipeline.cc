@@ -65,17 +65,16 @@ TEST(PipeLine, Setup) {
 }
 
 TEST(PipeLine, FailedSetup) {
-  NS::Exit e = NS::C("date")([]() -> bool { std::cerr << "FailedSetup" << std::endl; return false; }) | NS::C("head", "-n", 1);
+  NS::Exit e = NS::C("date")([]() -> bool { return false; }) | NS::C("head", "-n", 1);
   EXPECT_FALSE(e.success());
   EXPECT_TRUE(e[0].setup_error());
   EXPECT_FALSE(e[0].have_status());
 }
 
 TEST(PipeLine, SuccessSetup) {
-  NS::Exit e = NS::C("date")([]() -> bool { std::cerr << "SuccessSetup" << std::endl; return true; }) > "/dev/null";
+  NS::Exit e = NS::C("date")([]() -> bool { return true; }) > "/dev/null";
   EXPECT_TRUE(e.success());
   EXPECT_FALSE(e[0].setup_error());
   EXPECT_TRUE(e[0].have_status());
 }
-
 } // empty namespace

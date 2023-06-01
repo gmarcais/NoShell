@@ -20,14 +20,25 @@ protected:
   virtual void SetUp() {
     std::ofstream os(tmpfile, std::ios::trunc | std::ios::out);
   }
+
+  static const std::vector<const char*>lines;
   static void SetUpTestSuite() {
     std::ofstream os(textfile);
-    os << "hello\n"
-      "the\n"
-      "\n"
-      "world!\n";
+    for(auto str : lines)
+      os << str << '\n';
+  }
+
+  static void TestOutput(const char* path) {
+    std::ifstream tmp(path);
+    std::string line;
+    for(auto str : lines) {
+      EXPECT_TRUE((bool)std::getline(tmp, line));
+      EXPECT_EQ(str, line);
+    }
+    EXPECT_FALSE((bool)std::getline(tmp, line));
   }
 };
+const std::vector<const char*> CmdRedirection::lines{"hello", "the", "", "world!"};
 
 TEST_F(CmdRedirection, OutputFD) {
   check_fixed_fds check_fds;
@@ -102,17 +113,7 @@ TEST_F(CmdRedirection, InputFD) {
   close(fd);
 
   EXPECT_TRUE(e.success());
-  std::ifstream tmp(tmpfile);
-  std::string line;
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("hello", line);
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("the", line);
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("", line);
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("world!", line);
-  EXPECT_FALSE((bool)std::getline(tmp, line));
+  TestOutput(tmpfile);
 }
 
 TEST_F(CmdRedirection, InputFile) {
@@ -121,17 +122,15 @@ TEST_F(CmdRedirection, InputFile) {
   NS::Exit e = NS::C("cat") > tmpfile < textfile;
 
   EXPECT_TRUE(e.success());
-  std::ifstream tmp(tmpfile);
-  std::string line;
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("hello", line);
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("the", line);
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("", line);
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("world!", line);
-  EXPECT_FALSE((bool)std::getline(tmp, line));
+  TestOutput(tmpfile);
+}
+
+TEST_F(CmdRedirection, InputFileString) {
+  std::string input(textfile);
+  NS::Exit e = NS::C("cat") > tmpfile < input;
+
+  EXPECT_TRUE(e.success());
+  TestOutput(tmpfile);
 }
 
 TEST_F(CmdRedirection, OutputPipe) {

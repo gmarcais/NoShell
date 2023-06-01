@@ -178,9 +178,11 @@ inline PipeLine&& operator>(PipeLine&& pl, std::string& path) { return std::move
 
 PipeLine& operator>>(PipeLine& pl, from_to_path&& path);
 inline PipeLine&& operator>>(PipeLine&& pl, const char* path) { return std::move(pl >> from_to_path(1, path)); }
+inline PipeLine& operator>>(PipeLine& pl, const char* path) { return pl >> from_to_path(1, path); }
 inline PipeLine& operator>>(PipeLine& pl, const std::string& path) { return pl >> path.c_str(); }
 inline PipeLine& operator>>(PipeLine& pl, std::string&& path) { return pl >> from_to_path(1, std::move(path)); }
-inline PipeLine&& operator>>(PipeLine&& pl, const std::string& path) { return std::move(pl >> std::move(path)); }
+inline PipeLine&& operator>>(PipeLine&& pl, const std::string& path) { return std::move(pl >> path.c_str()); }
+inline PipeLine&& operator>>(PipeLine&& pl, const std::string&& path) { return std::move(pl >> std::move(path)); }
 
 PipeLine& operator<(PipeLine& cmd, const from_to_fd&& ft);
 inline PipeLine&& operator<(PipeLine&& cmd, from_to_fd&& ft) { return std::move(cmd < std::move(ft)); }
@@ -189,6 +191,7 @@ inline PipeLine&& operator<(PipeLine&& cmd, int fd) { return std::move(cmd < fd)
 
 PipeLine& operator<(PipeLine& pl, from_to_path&& ft);
 inline PipeLine&& operator<(PipeLine&& pl, from_to_path&& ft) { return std::move(pl < std::move(ft)); }
+inline PipeLine& operator<(PipeLine& pl, const char* path) { return pl < from_to_path(0, path); }
 inline PipeLine&& operator<(PipeLine&& pl, const char* path) { return std::move(pl < from_to_path(0, path)); }
 inline PipeLine& operator<(PipeLine& pl, const std::string& path) { return pl < path.c_str(); }
 inline PipeLine&& operator<(PipeLine&& pl, const std::string& path) { return std::move(pl < path.c_str()); }
