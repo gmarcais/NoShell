@@ -44,23 +44,10 @@ bool fd_redirection::child_setup() {
   return success;
 }
 
-pipeline_redirection::~pipeline_redirection() {
-  safe_close(pipe0[0]);
-  safe_close(pipe0[1]);
-  safe_close(pipe1[0]);
-  safe_close(pipe1[1]);
-}
-
 bool pipeline_redirection::child_setup() {
   safe_close(pipe0[1]);
   safe_close(pipe1[0]);
   return safe_dup2(pipe0[0], 0) && safe_dup2(pipe1[1], 1);
-}
-
-bool pipeline_redirection::parent_setup(std::string& err) {
-  safe_close(pipe0[0]);
-  safe_close(pipe1[1]);
-  return true;
 }
 
 process_setup* path_redirection_setter::make_setup(std::string& err, std::set<int>& rfds) {

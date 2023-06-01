@@ -77,4 +77,39 @@ TEST(PipeLine, SuccessSetup) {
   EXPECT_FALSE(e[0].setup_error());
   EXPECT_TRUE(e[0].have_status());
 }
+
+TEST(PipeLine, LongPipeline) {
+  constexpr int nbmax = 100;
+  const char* output = "long_pipeline_tmp";
+
+  for(int len = 1; len <= 10; ++len) {
+      noshell::ostream os;
+      auto pipeline = os | NS::C("cat");
+      for(int j = len - 1; j < len; ++j)
+        pipeline | NS::C("cat");
+      pipeline > output;
+
+      NS::Exit e = pipeline.run();
+      for(int i = 0; i < nbmax; ++i)
+        os << i << '\n';
+      os.close();
+      e.wait();
+
+      EXPECT_TRUE(e.success()) << "len: " << len;
+      std::ifstream is(output);
+      int x;
+      for(int i = 0; i < nbmax; ++i) {
+        is >> x;
+        EXPECT_TRUE(is.good());
+        EXPECT_EQ(i, x);
+      }
+      is >> x;
+      EXPECT_FALSE(is.good());
+  }
+  // NS::Exit e = (os | NS::C("cat") | NS::C("cat") | NS::C("cat") | NS::C("cat")) > "long_pipeline_tmp";
+
+
+  // e.wait();
+  // EXPECT_TRUE(e.success());
+}
 } // empty namespace

@@ -309,6 +309,25 @@ noshell::Exit e = "cat"_C("large_file") | "head"_C(1);
 e.success(true); // Most likely will return true
 ```
 
+## Building pipeline incrementally
+
+The redirection operators modify the existing Pipeline object.
+To create a pipeline incrementally, directly apply the operator without reassigning the object.
+For example, here is an example chaining 10 `cat` commands.
+
+``` cpp
+noshell::ostream os;
+auto pipeline = os | NS::C("cat");
+for(int j = 0; j < 9; ++j)
+  pipeline | NS::C("cat");
+pipeline > "output_file.txt";
+
+NS::Exit e = pipeline.run();
+os << "NOOP * 10\n";
+os.close();
+e.wait();
+```
+
 ## No literals <a name="No literals"></a>
 
 All the examples in this page make use of the user defined literal

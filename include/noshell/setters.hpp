@@ -120,9 +120,7 @@ struct pipeline_redirection : public process_setup {
     std::copy(p0, p0 + 2, pipe0);
     std::copy(p1, p1 + 2, pipe1);
   }
-  virtual ~pipeline_redirection();
   virtual bool child_setup();
-  virtual bool parent_setup(std::string& err);
   virtual bool fix_collisions(const std::set<int>& r) {
     return fix_collision(pipe0[0], r) && fix_collision(pipe0[1], r) && fix_collision(pipe1[0], r) && fix_collision(pipe1[1], r);
   }

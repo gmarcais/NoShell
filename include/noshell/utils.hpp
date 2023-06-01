@@ -33,5 +33,23 @@ struct auto_close {
   ~auto_close() { safe_close(fd); }
 };
 
+// Handle pipe fds
+struct auto_pipe_close {
+    int fds[2];
+  auto_pipe_close() : fds{-1, -1} {}
+  auto_pipe_close(int is[2]) : fds{is[0], is[1]} {}
+  ~auto_pipe_close() { close(); }
+  void close() {
+    safe_close(fds[0]);
+    safe_close(fds[1]);
+  }
+  auto_pipe_close& operator=(int is[2]) {
+    close();
+    fds[0] = is[0];
+    fds[1] = is[1];
+    return *this;
+  }
+};
+
 } // namespace noshell
 #endif /* __NOSHELL_UTILS_H__ */
