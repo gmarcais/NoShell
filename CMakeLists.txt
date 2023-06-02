@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(noshell VERSION 0.1.0 LANGUAGES CXX)
+project(noshell VERSION 0.2.0 LANGUAGES CXX)
 
 file(GLOB NOSHELL_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/lib/*.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp"
