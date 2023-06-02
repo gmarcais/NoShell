@@ -8,6 +8,7 @@
 #include <vector>
 #include <forward_list>
 #include <set>
+#include <memory>
 #include <initializer_list>
 
 #include <noshell/setters.hpp>
@@ -18,6 +19,7 @@ typedef std::forward_list<std::unique_ptr<process_setter> > setter_list_type;
 class Command {
   std::vector<std::string> cmd;
   setter_list_type         setters;
+  setup_list_type          setups;
 public:
   std::set<int>            redirected; // Set of redirected file descriptors
 
@@ -27,6 +29,7 @@ public:
   Command(Command&& rhs) noexcept
     : cmd(std::move(rhs.cmd))
     , setters(std::move(rhs.setters))
+    , setups(std::move(rhs.setups))
     , redirected(std::move(rhs.redirected))
   { }
   explicit Command(std::vector<std::string>&& c) : cmd(std::move(c)) { }
@@ -35,6 +38,7 @@ public:
   Command(std::initializer_list<std::string> l) : cmd(l) { }
 
   void push_setter(process_setter* setter);
+  void push_setup(process_setup* setup);
 
   Handle run(process_setup* setup = nullptr);
   Handle run_wait();
@@ -65,6 +69,10 @@ public:
   friend PipeLine& operator>>(PipeLine& pl, from_to_path&& ft);
   friend PipeLine& operator<(PipeLine& pl, from_to_fd&& ft);
   friend PipeLine& operator<(PipeLine& pl, from_to_path&& ft);
+  template<typename F>
+  PipeLine& operator()(F&& fun) &; // Add setup operation
+  template<typename F>
+  PipeLine&& operator()(F&& fun) &&;
 };
 
 // Structure to create pipeline object. Works with arbitrary number of
@@ -170,9 +178,11 @@ inline PipeLine&& operator>(PipeLine&& pl, std::string& path) { return std::move
 
 PipeLine& operator>>(PipeLine& pl, from_to_path&& path);
 inline PipeLine&& operator>>(PipeLine&& pl, const char* path) { return std::move(pl >> from_to_path(1, path)); }
+inline PipeLine& operator>>(PipeLine& pl, const char* path) { return pl >> from_to_path(1, path); }
 inline PipeLine& operator>>(PipeLine& pl, const std::string& path) { return pl >> path.c_str(); }
 inline PipeLine& operator>>(PipeLine& pl, std::string&& path) { return pl >> from_to_path(1, std::move(path)); }
-inline PipeLine&& operator>>(PipeLine&& pl, const std::string& path) { return std::move(pl >> std::move(path)); }
+inline PipeLine&& operator>>(PipeLine&& pl, const std::string& path) { return std::move(pl >> path.c_str()); }
+inline PipeLine&& operator>>(PipeLine&& pl, const std::string&& path) { return std::move(pl >> std::move(path)); }
 
 PipeLine& operator<(PipeLine& cmd, const from_to_fd&& ft);
 inline PipeLine&& operator<(PipeLine&& cmd, from_to_fd&& ft) { return std::move(cmd < std::move(ft)); }
@@ -181,6 +191,7 @@ inline PipeLine&& operator<(PipeLine&& cmd, int fd) { return std::move(cmd < fd)
 
 PipeLine& operator<(PipeLine& pl, from_to_path&& ft);
 inline PipeLine&& operator<(PipeLine&& pl, from_to_path&& ft) { return std::move(pl < std::move(ft)); }
+inline PipeLine& operator<(PipeLine& pl, const char* path) { return pl < from_to_path(0, path); }
 inline PipeLine&& operator<(PipeLine&& pl, const char* path) { return std::move(pl < from_to_path(0, path)); }
 inline PipeLine& operator<(PipeLine& pl, const std::string& path) { return pl < path.c_str(); }
 inline PipeLine&& operator<(PipeLine&& pl, const std::string& path) { return std::move(pl < path.c_str()); }
@@ -219,6 +230,18 @@ template<typename T>
 inline PipeLine& operator|(T& x, PipeLine& pl) { return from_to_ref<T>(0, x) | pl; }
 template<typename T>
 inline PipeLine&& operator|(T& x, PipeLine&& pl) { return std::move(x | pl); }
+
+template<typename F>
+PipeLine& PipeLine::operator()(F&& fun) & {
+  commands.back().push_setup(new user_process_setup<F>(std::forward<F>(fun)));
+  return *this;
+}
+template<typename F>
+PipeLine&& PipeLine::operator()(F&& fun) && {
+  commands.back().push_setup(new user_process_setup<F>(std::forward<F>(fun)));
+  return std::move(*this);
+}
+
 } // namespace noshell
 
 #endif /* __NOSHELL_NOSHELL_H__ */

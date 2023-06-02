@@ -7,33 +7,49 @@
 #include <string>
 #include <gtest/gtest.h>
 #include <noshell/noshell.hpp>
-#include "test_misc.hpp"
+#include "libtest_misc.hpp"
 
 namespace {
 namespace NS = noshell;
 using namespace NS::literal;
+static const char* tmpfile = "CmdRedirection_tmp";
+static const char* textfile = "text_file_tmp";
 
 class CmdRedirection : public ::testing::Test {
 protected:
   virtual void SetUp() {
-    while(true) {
-      if(truncate(getenv("TEST_TMP"), 0) != -1) break;
-      if(errno == EINTR) continue;
-      throw std::runtime_error("Failed to truncate tmp file");
+    std::ofstream os(tmpfile, std::ios::trunc | std::ios::out);
+  }
+
+  static const std::vector<const char*>lines;
+  static void SetUpTestSuite() {
+    std::ofstream os(textfile);
+    for(auto str : lines)
+      os << str << '\n';
+  }
+
+  static void TestOutput(const char* path) {
+    std::ifstream tmp(path);
+    std::string line;
+    for(auto str : lines) {
+      EXPECT_TRUE((bool)std::getline(tmp, line));
+      EXPECT_EQ(str, line);
     }
+    EXPECT_FALSE((bool)std::getline(tmp, line));
   }
 };
+const std::vector<const char*> CmdRedirection::lines{"hello", "the", "", "world!"};
 
 TEST_F(CmdRedirection, OutputFD) {
   check_fixed_fds check_fds;
 
-  int fd = open(getenv("TEST_TMP"), O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
+  int fd = open(tmpfile, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
   ASSERT_NE(-1, fd);
   NS::Exit e = NS::C("./puts_to", 1, "coucou") > fd;
   close(fd);
 
   EXPECT_TRUE(e.success());
-  std::ifstream tmp(getenv("TEST_TMP"));
+  std::ifstream tmp(tmpfile);
   std::string line;
   EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("coucou", line);
@@ -52,10 +68,10 @@ TEST_F(CmdRedirection, OutputBadFile) {
 TEST_F(CmdRedirection, OutputTmpFile) {
   check_fixed_fds check_fds;
 
-  NS::Exit e = NS::C("./puts_to", 1, "coucou") > getenv("TEST_TMP");
+  NS::Exit e = NS::C("./puts_to", 1, "coucou") > tmpfile;
 
   EXPECT_TRUE(e.success());
-  std::ifstream tmp(getenv("TEST_TMP"));
+  std::ifstream tmp(tmpfile);
   std::string line;
   EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("coucou", line);
@@ -66,16 +82,16 @@ TEST_F(CmdRedirection, AppendTmpFile) {
   check_fixed_fds check_fds;
 
   {
-    NS::Exit e = NS::C("./puts_to", "1", "coucou", "hi") > getenv("TEST_TMP");
+    NS::Exit e = NS::C("./puts_to", "1", "coucou", "hi") > tmpfile;
     EXPECT_TRUE(e.success());
   }
 
   {
-    NS::Exit e = NS::C("./puts_to", "1", "toto", "tata") >> getenv("TEST_TMP");
+    NS::Exit e = NS::C("./puts_to", "1", "toto", "tata") >> tmpfile;
     EXPECT_TRUE(e.success());
   }
 
-  std::ifstream tmp(getenv("TEST_TMP"));
+  std::ifstream tmp(tmpfile);
   std::string line;
   EXPECT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("coucou", line);
@@ -91,42 +107,30 @@ TEST_F(CmdRedirection, AppendTmpFile) {
 TEST_F(CmdRedirection, InputFD) {
   check_fixed_fds check_fds;
 
-  int fd = open("text_file.txt", O_RDONLY);
+  int fd = open(textfile, O_RDONLY);
   ASSERT_NE(-1, fd);
-  NS::Exit e = NS::C("cat") > getenv("TEST_TMP") < fd;
+  NS::Exit e = NS::C("cat") > tmpfile < fd;
   close(fd);
 
   EXPECT_TRUE(e.success());
-  std::ifstream tmp(getenv("TEST_TMP"));
-  std::string line;
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("hello", line);
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("the", line);
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("", line);
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("world!", line);
-  EXPECT_FALSE((bool)std::getline(tmp, line));
+  TestOutput(tmpfile);
 }
 
 TEST_F(CmdRedirection, InputFile) {
   check_fixed_fds check_fds;
 
-  NS::Exit e = NS::C("cat") > getenv("TEST_TMP") < "text_file.txt";
+  NS::Exit e = NS::C("cat") > tmpfile < textfile;
 
   EXPECT_TRUE(e.success());
-  std::ifstream tmp(getenv("TEST_TMP"));
-  std::string line;
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("hello", line);
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("the", line);
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("", line);
-  EXPECT_TRUE((bool)std::getline(tmp, line));
-  EXPECT_EQ("world!", line);
-  EXPECT_FALSE((bool)std::getline(tmp, line));
+  TestOutput(tmpfile);
+}
+
+TEST_F(CmdRedirection, InputFileString) {
+  std::string input(textfile);
+  NS::Exit e = NS::C("cat") > tmpfile < input;
+
+  EXPECT_TRUE(e.success());
+  TestOutput(tmpfile);
 }
 
 TEST_F(CmdRedirection, OutputPipe) {
@@ -154,7 +158,7 @@ TEST_F(CmdRedirection, InputPipe) {
   check_fixed_fds check_fds;
 
   FILE* f = nullptr;
-  NS::Exit e = (f | NS::C("cat")) > getenv("TEST_TMP");
+  NS::Exit e = (f | NS::C("cat")) > tmpfile;
 
   ASSERT_FALSE(e[0].setup_error());
   ASSERT_NE(nullptr, f);
@@ -166,7 +170,7 @@ TEST_F(CmdRedirection, InputPipe) {
   e.wait();
   EXPECT_TRUE(e.success());
 
-  std::ifstream tmp(getenv("TEST_TMP"));
+  std::ifstream tmp(tmpfile);
   std::string line;
   ASSERT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("hello", line);
@@ -200,7 +204,7 @@ TEST_F(CmdRedirection, InputStream) {
   check_fixed_fds check_fds;
 
   NS::ostream os;
-  NS::Exit e = (os | NS::C("cat")) > getenv("TEST_TMP");
+  NS::Exit e = (os | NS::C("cat")) > tmpfile;
 
   ASSERT_FALSE(e[0].setup_error());
   ASSERT_TRUE(os.good());
@@ -211,7 +215,7 @@ TEST_F(CmdRedirection, InputStream) {
   e.wait();
   EXPECT_TRUE(e.success());
 
-  std::ifstream tmp(getenv("TEST_TMP"));
+  std::ifstream tmp(tmpfile);
   std::string line;
   ASSERT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("hello", line);
@@ -224,10 +228,10 @@ TEST_F(CmdRedirection, InputStream) {
 TEST_F(CmdRedirection, OutErr1) {
   check_fixed_fds check_fds;
 
-  NS::Exit e = "./puts_to"_C(1, "bah") > NS::R(2, 1).to(getenv("TEST_TMP"));
+  NS::Exit e = "./puts_to"_C(1, "bah") > NS::R(2, 1).to(tmpfile);
 
   ASSERT_TRUE(e.success());
-  std::ifstream tmp(getenv("TEST_TMP"));
+  std::ifstream tmp(tmpfile);
   std::string line;
   ASSERT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("bah", line);
@@ -237,10 +241,10 @@ TEST_F(CmdRedirection, OutErr1) {
 TEST_F(CmdRedirection, OutErr2) {
   check_fixed_fds check_fds;
 
-  NS::Exit e = "./puts_to"_C(2, "bou") > NS::R(2, 1).to(getenv("TEST_TMP"));
+  NS::Exit e = "./puts_to"_C(2, "bou") > NS::R(2, 1).to(tmpfile);
 
   ASSERT_TRUE(e.success());
-  std::ifstream tmp(getenv("TEST_TMP"));
+  std::ifstream tmp(tmpfile);
   std::string line;
   ASSERT_TRUE((bool)std::getline(tmp, line));
   EXPECT_EQ("bou", line);
@@ -251,7 +255,7 @@ TEST_F(CmdRedirection, Path3) {
   check_fixed_fds check_fds;
 
   FILE* st;
-  NS::Exit e = ("cat"_C("/dev/fd/3") < 3_R("text_file.txt")) | st;
+  NS::Exit e = ("cat"_C("/dev/fd/3") < 3_R(textfile)) | st;
 
   EXPECT_FALSE(e[0].setup_error());
 

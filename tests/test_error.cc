@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
+#include <signal.h>
+#include <cstring>
 #include <noshell/noshell.hpp>
-#include "test_misc.hpp"
+#include "libtest_misc.hpp"
 
 
 namespace {
@@ -21,18 +23,20 @@ TEST(Error, ReadFile) {
 TEST(Error, WriteFile) {
   check_fixed_fds check_fds;
 
+  #define nadirw "WriteFileNotAllowed"
+  not_allowed_dir dir(nadirw);
   {
-    NS::Exit e = "cat"_C() > "/noallowed";
+    NS::Exit e = "cat"_C() > nadirw "/noallowed";
     ASSERT_TRUE(e[0].setup_error());
-    const std::string expect = "Failed to open the file '/noallowed' for writing";
+    const std::string expect = "Failed to open the file '" nadirw "/noallowed' for writing";
     EXPECT_EQ(expect, e[0].message);
     EXPECT_EQ(EACCES, e[0].data.err.value);
   }
 
   {
-    NS::Exit e = "cat"_C() > "/doesntexists/stupid";
+    NS::Exit e = "cat"_C() > nadirw "/doesntexists/stupid";
     ASSERT_TRUE(e[0].setup_error());
-    const std::string expect = "Failed to open the file '/doesntexists/stupid' for writing";
+    const std::string expect = "Failed to open the file '" nadirw "/doesntexists/stupid' for writing";
     EXPECT_EQ(expect, e[0].message);
     EXPECT_EQ(ENOENT, e[0].data.err.value);
   }
@@ -50,8 +54,10 @@ TEST(Error, BadCmd) {
 
 TEST(Error, Failures) {
   check_fixed_fds check_fds;
+  #define nadirf "FailuresNotAllowed"
+  not_allowed_dir dir(nadirf);
 
-  NS::Exit e = ("notexists"_C() | "cat"_C("--badoption") | "cat"_C()) > "/noallowed";
+  NS::Exit e = ("notexists"_C() | ("cat"_C("--badoption") > 2_R("/dev/null")) | "cat"_C()) > nadirf "/noallowed";
   EXPECT_FALSE(e.success());
 
   {
@@ -84,13 +90,40 @@ TEST(Error, Failures) {
   }
 } // Error.Failures
 
+bool sigpipe(bool block) {
+  sigset_t signals;
+  struct sigaction act;
+
+  memset(&act, '\0', sizeof(act));
+  act.sa_handler = SIG_DFL;
+  if(sigaction(SIGPIPE, &act, nullptr) == -1) return false;
+
+  if(sigemptyset(&signals) == -1) return false;
+  if(sigaddset(&signals, SIGPIPE) == -1) return false;
+  const auto action = block ? SIG_BLOCK : SIG_UNBLOCK;
+  if(sigprocmask(action, &signals, nullptr) == -1) return false;
+
+  return true;
+}
+
 TEST(Error, SigPipe) {
-  NS::Exit e = ("cat"_C("/dev/zero") | "head"_C("-c", 1)) > "/dev/null";
+  // Make sure SIGPIPE is delivered to cat
+  NS::Exit e = (NS::C("cat", "/dev/zero")([]() -> bool { return sigpipe(false); }) | "head"_C("-c", 1)); // > "/dev/null";
   EXPECT_FALSE(e.success());
   EXPECT_TRUE(e.success(true));
   EXPECT_FALSE(e[0].success());
   EXPECT_TRUE(e[0].success(true));
   EXPECT_TRUE(e[1].success());
 } // Error.SigPipe
+
+TEST(Error, EPipe) {
+  // Make sure SIGPIPE is NOT delivered to cat
+  NS::Exit e = (NS::C("cat", "/dev/zero")([]() -> bool{ return sigpipe(true); }) | "head"_C("-c", 1)); // > "/dev/null";
+  EXPECT_FALSE(e.success());
+  EXPECT_FALSE(e.success(true));
+  EXPECT_FALSE(e[0].success());
+  EXPECT_FALSE(e[0].success(true));
+  EXPECT_TRUE(e[1].success());
+} // Error.EPipe
 
 } // empty namespace

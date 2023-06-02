@@ -1,3 +1,4 @@
+#include <iterator>
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
@@ -34,11 +35,15 @@ void send_errno_to_pipe(int fd) {
   }
 }
 
-bool setup_exec_child(const std::set<int>& redirected, setup_list_type& setups, const std::vector<std::string>& cmd) {
+bool setup_exec_child(const std::set<int>& redirected, setup_list_type& setups, setup_list_type& user_setups, const std::vector<std::string>& cmd) {
   for(auto& it : setups)
     if(!it->fix_collisions(redirected))
       return false;
   for(auto& it : setups) {
+    if(!it->child_setup())
+      return false;
+  }
+  for(auto& it : user_setups) {
     if(!it->child_setup())
       return false;
   }
@@ -74,7 +79,7 @@ Handle Command::run(process_setup* last_setup) {
 
   case 0:
     safe_close(pipe_fds[0]);
-    setup_exec_child(redirected, ret.setups, cmd);
+    setup_exec_child(redirected, ret.setups, setups, cmd);
     send_errno_to_pipe(pipe_fds[1]);
     exit(0);
 
@@ -120,6 +125,10 @@ void Command::push_setter(process_setter* setter) {
   setters.push_front(std::unique_ptr<process_setter>(setter));
 }
 
+void Command::push_setup(process_setup* setup) {
+  setups.push_front(std::unique_ptr<process_setup>(setup));
+}
+
 Handle::Handle(Command&& rhs) : Handle(rhs.run_wait()) { }
 
 void Handle::wait() {
@@ -138,6 +147,24 @@ void Handle::wait() {
   }
 }
 
+std::ostream& operator<<(std::ostream& os, const Handle& handle) {
+  os << handle.pid << ':';
+  if(handle.setup_error()) {
+      os << handle.what();
+  } else if(handle.have_status()) {
+    if(handle.status().exited()) {
+      os << "ret:" << handle.status().exit_status();
+    } else if(handle.status().signaled()) {
+      os << "sig:" << handle.status().term_sig() << ':' << handle.status().signal();
+    } else {
+      os << "unknown";
+    }
+  } else {
+    os << '-';
+  }
+  return os;
+}
+
 Exit::Exit(PipeLine&& rhs) : Exit(rhs.run_wait_auto()) { }
 
 Exit PipeLine::run() {
@@ -146,15 +173,16 @@ Exit PipeLine::run() {
   auto it = commands.begin();
   if(it == commands.end()) return ret;
   auto pit = it;
-  int pfds[2] = { -1, -1 };
+  auto_pipe_close pfds;
   for(++it; it != commands.end(); pit = it, ++it) {
     int fds[2];
     if(pipe2(fds, O_CLOEXEC) == -1) exit(1); // TODO: handle error
-    ret.push_handle(pit->run(new pipeline_redirection(pfds, fds)));
-    std::copy(fds, fds + 2, pfds);
+    ret.push_handle(pit->run(new pipeline_redirection(pfds.fds, fds)));
+    pfds = fds;
   }
   int fds[2] = { -1, -1 };
-  ret.push_handle(pit->run(new pipeline_redirection(pfds, fds)));
+  ret.push_handle(pit->run(new pipeline_redirection(pfds.fds, fds)));
+  pfds.close();
 
   return ret;
 }

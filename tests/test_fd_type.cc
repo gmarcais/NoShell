@@ -26,13 +26,15 @@ TEST(FdType, BasicProperties) {
 }
 
 TEST(FdType, move) {
+  const char* tmp = "FdType_Move_tmp";
   {
-    std::ofstream os(getenv("TEST_TMP"));
+    std::ofstream os(tmp);
     os << "42";
+    ASSERT_TRUE(os.good());
   }
 
-  NS::fd_type fd1 = open(getenv("TEST_TMP"), O_RDONLY);
-  NS::fd_type fd2 = open(getenv("TEST_TMP"), O_RDONLY|O_CLOEXEC);
+  NS::fd_type fd1 = open(tmp, O_RDONLY);
+  NS::fd_type fd2 = open(tmp, O_RDONLY|O_CLOEXEC);
   ASSERT_NE(-1, fd1);
   ASSERT_NE(-1, fd2);
 

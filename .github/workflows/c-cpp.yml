@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - uses: ConorMacBride/install-package@v1
+      with:
+        apt: libgtest-dev strace
     - uses: actions/checkout@v3
     - name: autoconf
       run: autoreconf -fi
@@ -23,3 +26,10 @@ jobs:
       run: make check
     - name: make distcheck
       run: make distcheck
+    - name: Archive testing logs
+      if: '!cancelled()'
+      uses: actions/upload-artifact@v3
+      with:
+        name: gtest-logs
+        path: '**/*.log'
+        retention-days: 1

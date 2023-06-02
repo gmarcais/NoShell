@@ -13,7 +13,7 @@
 #include <string>
 
 #include <gtest/gtest.h>
-#include "test_misc.hpp"
+#include "libtest_misc.hpp"
 
 std::vector<int> open_fds() {
   static const int flags = O_RDONLY

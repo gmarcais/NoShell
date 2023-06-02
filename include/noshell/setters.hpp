@@ -120,9 +120,7 @@ struct pipeline_redirection : public process_setup {
     std::copy(p0, p0 + 2, pipe0);
     std::copy(p1, p1 + 2, pipe1);
   }
-  virtual ~pipeline_redirection();
   virtual bool child_setup();
-  virtual bool parent_setup(std::string& err);
   virtual bool fix_collisions(const std::set<int>& r) {
     return fix_collision(pipe0[0], r) && fix_collision(pipe0[1], r) && fix_collision(pipe1[0], r) && fix_collision(pipe1[1], r);
   }
@@ -229,6 +227,14 @@ struct stream_pipe_redirection_setter : public fd_pipe_redirection_setter {
   }
 };
 #endif // defined(__GLIBCXX__) || defined(HAVE_STDIO_FILEBUF_H)
+
+// User process setup
+template<typename F>
+struct user_process_setup : public process_setup {
+  F fun;
+  user_process_setup(F f) : fun(f) { }
+  virtual bool child_setup() { return fun(); }
+};
 
 // Traits to select the proper setter
 template<typename T>
