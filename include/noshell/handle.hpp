@@ -152,7 +152,7 @@ public:
   void wait() { for(auto& h : handles) h.wait(); }
 };
 
-std::ostream& operator<<(std::ostream& os, const Exit& exit) {
+inline std::ostream& operator<<(std::ostream& os, const Exit& exit) {
   auto it = exit.begin();
   if(it != exit.end()) {
     os << *it;
