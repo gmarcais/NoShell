@@ -12,7 +12,7 @@ option(NOSHELL_BUILD_TESTS "Set to ON to build tests" ${NOSHELL_MASTER_PROJECT})
 option(NOSHELL_ENABLE_INSTALL "Generate the install target" ${NOSHELL_MASTER_PROJECT})
 
 # get version
-file(READ "${CMAKE_SOURCE_DIR}/configure.ac" configure_ac)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/configure.ac" configure_ac)
 string(REGEX MATCH "AC_INIT\\\(\\\[noshell\\\],\\\[(.*)\\\],\\\[gmarcais@cmu.edu\\\]\\\)" _ "${configure_ac}")
 if(NOT CMAKE_MATCH_COUNT EQUAL 1)
     message(FATAL_ERROR "Could not extract major version number from configure.ac")
