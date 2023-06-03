@@ -78,6 +78,23 @@ sudo make install
 At this point, this library has only been tested on Linux, with `g++`
 version 4.7 or newer and `clang++` version 3.2.
 
+### CMake
+
+Alternatively, you can use CMake to build the library:
+
+```sh
+mkdir build
+cmake -S . -B build
+cmake --build build
+sudo cmake --install build
+```
+
+Run the tests with:
+
+```sh
+cd build && ctest
+```
+
 ## Using the library
 
 Add the following to your make file:
@@ -85,4 +102,18 @@ Add the following to your make file:
 ```make
 CXXFLAGS = $(shell pkg-config --cflags noshell)
 LDFLAGS = $(shell pkg-config --libs noshell)
+```
+
+### CMake
+
+Add the following to your `CMakeLists.txt`:
+
+```cmake
+find_package(noshell REQUIRED)
+
+# link shared library
+target_link_libraries(mytarget noshell::noshell)
+
+# link static library
+target_link_libraries(mytarget noshell::noshell-static)
 ```
