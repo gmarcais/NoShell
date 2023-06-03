@@ -44,7 +44,8 @@ set_target_properties(${project_name}
 set_target_properties(${project_name}-static
     PROPERTIES
         CXX_STANDARD 11
-        POSITION_INDEPENDENT_CODE 1)
+        POSITION_INDEPENDENT_CODE 1
+        OUTPUT_NAME ${project_name})
 
 if(NOSHELL_ENABLE_INSTALL)
     set(project_config_in "${CMAKE_CURRENT_LIST_DIR}/noshellConfig.cmake.in")
