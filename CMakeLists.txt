@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 set(project_name noshell)
 
-include(GNUInstallDirs)
-
 set(NOSHELL_MASTER_PROJECT OFF)
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     set(NOSHELL_MASTER_PROJECT ON)
@@ -23,6 +21,7 @@ message(STATUS "noshell version: ${noshell_version}")
 
 project(${project_name} VERSION "${noshell_version}" LANGUAGES CXX)
 
+include(GNUInstallDirs)
 
 set(NOSHELL_SRCS lib/noshell.cc lib/setters.cc lib/utils.cc)
 
