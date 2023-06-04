@@ -31,6 +31,6 @@ foreach(src ${NOSHELL_TESTS_HELPER})
 endforeach()
 
 add_executable(noshell_tests ${NOSHELL_TESTS_LIST})
-target_link_libraries(noshell_tests GTest::Main GTest::GTest Threads::Threads noshell)
+target_link_libraries(noshell_tests GTest::Main GTest::GTest Threads::Threads noshell::noshell)
 
 add_test(noshell_tests noshell_tests)

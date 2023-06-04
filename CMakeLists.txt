@@ -103,10 +103,10 @@ if(NOSHELL_ENABLE_INSTALL)
 
     write_basic_package_version_file("${version_config_file}"
                                     VERSION "${noshell_version}"
-                                    COMPATIBILITY AnyNewerVersion)
+                                    COMPATIBILITY ExactVersion)
 
     install(FILES "${project_config_out}" "${version_config_file}" DESTINATION "${export_dest_dir}")
-endif(NOSHELL_ENABLE_INSTALL)
+endif()
         
 
 if(NOSHELL_BUILD_TESTS)
