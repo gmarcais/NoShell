@@ -1,4 +1,4 @@
-![CI](https://github.com/github/docs/actions/workflows/c-cpp.yml/badge.svg)
+![CI](https://github.com/gmarcais/NoShell/actions/workflows/c-cpp.yml/badge.svg)
 
 # NoShell library
 
