@@ -21,4 +21,5 @@ dist_sub_HEADERS = $(INCDIR)/noshell.hpp $(INCDIR)/handle.hpp	\
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = noshell.pc
 
-
+# For CMake support
+EXTRA_DIST = CMakeLists.txt noshellConfig.cmake.in

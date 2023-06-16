@@ -66,17 +66,28 @@ arguments to the exec call.
 
 ## Installation
 
+It is recommended to install using the release tarball `noshel-x.x.x.tar.gz` available from [Github releases](https://github.com/gmarcais/NoShell/releases) rather than from the git tree.
+
+For development, use the git tree, use the `develop` branch and initialize autotools with `autoreconf -i`.
+
+
+### Autotools
+
 For installation, use autoconf/automake:
 
 ```sh
-autoreconf -i
+# autoreconf -i # Only if running from git tree
 ./configure
 make
 sudo make install
 ```
 
-At this point, this library has only been tested on Linux, with `g++`
-version 4.7 or newer and `clang++` version 3.2.
+Run the unit tests (requires Google `gtest``) with:
+
+``` shell
+make check
+```
+
 
 ### CMake
 
@@ -84,12 +95,12 @@ Alternatively, you can use CMake to build the library:
 
 ```sh
 mkdir build
-cmake -S . -B build
+cmake -S . -B build -DNOSHELL_BUILD_TESTS=OFF
 cmake --build build
 sudo cmake --install build
 ```
 
-Run the tests with:
+To compile the unit tests (requires Google `gtest`), do not include `-DNOSHELL_BUILD_TESTS=OFF` in the `cmake` command above and run the tests with:
 
 ```sh
 cd build && ctest
@@ -97,12 +108,16 @@ cd build && ctest
 
 ## Using the library
 
-Add the following to your make file:
+### Pkg-config
+
+Add the following to your `Makefile`:
 
 ```make
 CXXFLAGS = $(shell pkg-config --cflags noshell)
 LDFLAGS = $(shell pkg-config --libs noshell)
 ```
+
+This method works with autotools and cmake installation.
 
 ### CMake
 
