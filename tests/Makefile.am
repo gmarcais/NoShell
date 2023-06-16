@@ -22,3 +22,6 @@ clean-local: clean-local-check
 .PHONY: clean-local-check
 clean-local-check:
 	rm -f *_tmp
+
+# CMake support
+EXTRA_DIST += CMakeLists.txt
