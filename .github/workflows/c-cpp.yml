@@ -14,18 +14,19 @@ jobs:
     steps:
     - uses: ConorMacBride/install-package@v1
       with:
-        apt: libgtest-dev strace
+        apt: libgtest-dev
     - uses: actions/checkout@v3
-    - name: autoconf
+
+    - name: Build and test with autotools
       run: autoreconf -fi
     - name: configure
       run: ./configure
     - name: make
-      run: make
+      run: make -j
     - name: make check
-      run: make check
+      run: make -j check
     - name: make distcheck
-      run: make distcheck
+      run: make -j distcheck
     - name: Archive testing logs
       if: '!cancelled()'
       uses: actions/upload-artifact@v3
@@ -33,3 +34,9 @@ jobs:
         name: gtest-logs
         path: '**/*.log'
         retention-days: 1
+
+    - name: Build and test with CMake
+      uses: threeal/cmake-action@latest
+      with:
+        args: -DNOSHELL_BUILD_TESTS=ON
+        run-test: true
